@@ -1,0 +1,624 @@
+<template>
+  <div class="sys area">
+    <!-- 操作按钮区域 -->
+    <div class="operation-bar">
+      <div class="operation-left">
+        <!-- 搜索按钮和弹框 -->
+        <el-popover
+          placement="bottom-start"
+          :width="400"
+          trigger="click"
+          v-model:visible="searchPopoverVisible"
+        >
+          <template #reference>
+            <el-button class="search-btn">
+              <el-icon><MoreFilled /></el-icon>
+            </el-button>
+          </template>
+          <div class="search-popover">
+            <div class="search-form">
+              <!-- 商品名称输入框 -->
+              <div class="form-item">
+                <el-input v-model="searchForm.productName" placeholder="请输入商品名称" clearable />
+              </div>
+
+              <!-- 商品编号输入框 -->
+              <div class="form-item">
+                <el-input v-model="searchForm.productCode" placeholder="请输入商品编号" clearable />
+              </div>
+
+              <!-- 单据日期范围 -->
+              <div class="form-item">
+                <div class="date-range">
+                  <el-date-picker
+                    v-model="searchForm.orderStartDate"
+                    type="date"
+                    placeholder="开始日期"
+                    style="width: 48%"
+                    value-format="YYYY-MM-DD"
+                  />
+                  <span class="date-separator">至</span>
+                  <el-date-picker
+                    v-model="searchForm.orderEndDate"
+                    type="date"
+                    placeholder="结束日期"
+                    style="width: 48%"
+                    value-format="YYYY-MM-DD"
+                  />
+                </div>
+              </div>
+
+              <!-- 搜索按钮 -->
+              <div class="form-actions">
+                <el-button type="primary" @click="handleSearch" class="search-action-btn">
+                  搜索
+                </el-button>
+                <el-button @click="handleResetSearch" class="reset-action-btn"> 重置 </el-button>
+              </div>
+            </div>
+          </div>
+        </el-popover>
+      </div>
+
+      <div class="operation-right">
+        <el-button type="primary" @click="handleExport" class="action-btn">
+          <el-icon><Download /></el-icon>
+          导出
+        </el-button>
+        <el-button type="info" @click="handleRefresh" class="action-btn">
+          <el-icon><Refresh /></el-icon>
+          刷新
+        </el-button>
+      </div>
+    </div>
+
+    <el-divider class="custom-divider" />
+
+    <!-- 表格区域 - 占据主要空间 -->
+    <div class="table-container">
+      <el-table
+        :data="tableData"
+        style="width: 100%"
+        v-loading="loading"
+        border
+        class="grid-table"
+        :default-sort="{ prop: 'quantity', order: 'descending' }"
+      >
+        <!-- 商品名称列 -->
+        <el-table-column prop="productName" label="商品名称" width="180" />
+
+        <!-- 辅助属性列 -->
+        <el-table-column prop="auxiliaryAttr" label="辅助属性" width="120" />
+
+        <!-- 商品编号列 -->
+        <el-table-column prop="productCode" label="商品编号" width="150" />
+
+        <!-- 规格型号列 -->
+        <el-table-column prop="specification" label="规格型号" width="150" />
+
+        <!-- 单位列 -->
+        <el-table-column prop="unit" label="单位" width="80" align="center" />
+
+        <!-- 数量列 -->
+        <el-table-column prop="quantity" label="数量" width="120" align="right" sortable>
+          <template #default="scope">
+            <span class="quantity-highlight">{{ scope.row.quantity }}</span>
+          </template>
+        </el-table-column>
+
+        <!-- 折扣额列 -->
+        <el-table-column prop="discount" label="折扣额" width="120" align="right">
+          <template #default="scope">
+            <span>{{ formatCurrency(scope.row.discount) }}</span>
+          </template>
+        </el-table-column>
+
+        <!-- 税额列 -->
+        <el-table-column prop="tax" label="税额" width="120" align="right">
+          <template #default="scope">
+            <span>{{ formatCurrency(scope.row.tax) }}</span>
+          </template>
+        </el-table-column>
+
+        <!-- 价税合计列 -->
+        <el-table-column prop="totalWithTax" label="价税合计" width="120" align="right">
+          <template #default="scope">
+            <span class="total-highlight">{{ formatCurrency(scope.row.totalWithTax) }}</span>
+          </template>
+        </el-table-column>
+
+        <!-- 成本列 -->
+        <el-table-column prop="cost" label="成本" width="120" align="right">
+          <template #default="scope">
+            <span>{{ formatCurrency(scope.row.cost) }}</span>
+          </template>
+        </el-table-column>
+
+        <!-- 总成本列 -->
+        <el-table-column prop="totalCost" label="总成本" width="120" align="right">
+          <template #default="scope">
+            <span class="total-cost-highlight">{{ formatCurrency(scope.row.totalCost) }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 分页区域 - 移动到左下角 -->
+      <div class="pagination-container pagination-left">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 30, 50]"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { reactive, ref, computed, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Download, Refresh, MoreFilled } from '@element-plus/icons-vue'
+
+import {
+  purchaseRankingFormUsingGet,
+  purchaseRankingFormOpenApiExportUsingGet
+} from '@/apis/report/purchase/caigoupaixingbiao'
+import type {
+  PurchaseRankingFormUsingGetParams,
+  PurchaseRankingFormOpenApiExportUsingGetParams,
+  PageDTO8
+} from '@/apis/report/purchase/types'
+
+// ===================== 1. 类型定义 =====================
+
+interface PurchaseRankingRow {
+  id?: number | string
+  productName: string
+  auxiliaryAttr?: string
+  productCode: string
+  specification?: string
+  unit?: string
+  quantity: number
+  discount: number
+  tax: number
+  totalWithTax: number
+  cost: number
+  totalCost: number
+}
+
+// 搜索表单
+const searchForm = reactive({
+  productName: '',
+  productCode: '',
+  orderStartDate: '',
+  orderEndDate: ''
+})
+
+// 搜索弹框显示状态
+const searchPopoverVisible = ref(false)
+
+// 表格 & 分页
+const tableData = ref<PurchaseRankingRow[]>([])
+const total = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const loading = ref(false)
+
+// ===================== 2. 工具函数 =====================
+
+// 将前端搜索条件转换为后端查询参数
+// beginTime / endTime / goodsName / goodsNumber
+const buildSearchParams = (): Partial<PurchaseRankingFormOpenApiExportUsingGetParams> => {
+  const params: Partial<PurchaseRankingFormOpenApiExportUsingGetParams> = {}
+
+  if (searchForm.productName) {
+    params.goodsName = searchForm.productName
+  }
+  if (searchForm.productCode) {
+    params.goodsNumber = searchForm.productCode
+  }
+  if (searchForm.orderStartDate) {
+    params.beginTime = searchForm.orderStartDate
+  }
+  if (searchForm.orderEndDate) {
+    params.endTime = searchForm.orderEndDate
+  }
+
+  return params
+}
+
+// 把后端返回的一行数据映射成表格需要的字段
+const mapBackendRowToItem = (item: any): PurchaseRankingRow => {
+  const row: PurchaseRankingRow = {
+    id: item.id ?? 0,
+    // 商品名称
+    productName: item.productName ?? item.goodsName ?? item.name ?? '',
+    // 辅助属性
+    auxiliaryAttr: item.auxiliaryAttr ?? item.attr ?? '',
+    // 商品编号
+    productCode: item.productCode ?? item.goodsNumber ?? item.number ?? '',
+    // 规格型号
+    specification: item.specification ?? item.spec ?? item.model ?? '',
+    // 单位
+    unit: item.unit ?? item.goodsUnit ?? '',
+    // 数量
+    quantity: Number(item.quantity ?? item.nums ?? item.totalNum ?? 0),
+    // 折扣额
+    discount: Number(item.discount ?? item.discountAmount ?? item.dsc ?? 0),
+    // 税额
+    tax: Number(item.tax ?? item.taxAmount ?? item.tat ?? 0),
+    // 价税合计
+    totalWithTax: Number(item.totalWithTax ?? item.totalAmount ?? item.tpt ?? 0),
+    // 成本
+    cost: Number(item.cost ?? item.unitCost ?? 0),
+    // 总成本
+    totalCost: Number(item.totalCost ?? item.costTotal ?? item.totalCostAmount ?? 0)
+  }
+
+  return row
+}
+
+// 金额格式化
+const formatCurrency = (value: number | string | null | undefined) => {
+  const num = Number(value) || 0
+  return `¥${num.toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`
+}
+
+// ===================== 3. 查询接口：purchaseRankingFormUsingGet =====================
+
+const fetchTableData = async () => {
+  loading.value = true
+  try {
+    const params: PurchaseRankingFormUsingGetParams = {
+      pageIndex: currentPage.value,
+      pageSize: pageSize.value,
+      ...(buildSearchParams() as any)
+    }
+
+    const res = await purchaseRankingFormUsingGet({ params })
+    console.log('【采购排行表接口返回】', res)
+
+    const anyRes: any = res
+    let pageWrapper: PageDTO8 | undefined
+
+    // 兼容三种常见结构：JsonVO<JsonVO<PageDTO8>> / JsonVO<PageDTO8> / PageDTO8
+    if (anyRes?.data?.data?.rows || anyRes?.data?.data?.total != null) {
+      pageWrapper = anyRes.data.data as PageDTO8
+    } else if (anyRes?.data?.rows || anyRes?.data?.total != null) {
+      pageWrapper = anyRes.data as PageDTO8
+    } else if (anyRes?.rows || anyRes?.total != null) {
+      pageWrapper = anyRes as PageDTO8
+    } else {
+      console.warn('⚠ 未识别的分页结构，请查看上面的接口返回 log', anyRes)
+    }
+
+    const list = pageWrapper?.rows ?? []
+    const totalCount = pageWrapper?.total ?? 0
+
+    console.log('【解析后的 rows】', list, 'total =', totalCount)
+
+    tableData.value = list.map((item: any) => mapBackendRowToItem(item))
+    total.value = totalCount
+  } catch (error: any) {
+    console.error('获取采购排行表失败', error)
+    ElMessage.error(error?.message || '获取采购排行表失败')
+    tableData.value = []
+    total.value = 0
+  } finally {
+    loading.value = false
+  }
+}
+
+// ===================== 4. 搜索 / 重置 / 刷新 =====================
+
+const handleSearch = () => {
+  searchPopoverVisible.value = false
+  currentPage.value = 1
+  fetchTableData()
+  ElMessage.success('搜索完成')
+}
+
+const handleResetSearch = () => {
+  Object.assign(searchForm, {
+    productName: '',
+    productCode: '',
+    orderStartDate: '',
+    orderEndDate: ''
+  })
+  ElMessage.info('已重置搜索条件')
+}
+
+const handleRefresh = () => {
+  handleResetSearch()
+  currentPage.value = 1
+  fetchTableData()
+  ElMessage.success('数据已刷新')
+}
+
+// ===================== 5. 导出接口：purchaseRankingFormOpenApiExportUsingGet =====================
+
+const handleExport = async () => {
+  try {
+    ElMessage.info('正在导出数据...')
+
+    const commonParams = buildSearchParams()
+
+    // 👉 决定导出范围：
+    // - 当前页：pageIndex: currentPage.value, pageSize: pageSize.value
+    // - 当前条件下全部数据：pageIndex: 1, pageSize: 99999
+    const params: PurchaseRankingFormOpenApiExportUsingGetParams = {
+      pageIndex: 1,
+      pageSize: 99999,
+      ...(commonParams as any)
+    }
+
+    // 注意：这里返回的是 JsonVO<Blob>（ts 提示里已经暴露了）
+    const res = await purchaseRankingFormOpenApiExportUsingGet({ params })
+    console.log('【采购排行表导出接口返回】', res)
+
+    const anyRes: any = res
+    // 真正的文件流一般在 data 里；保险一点兼容两种写法
+    const blob: Blob = anyRes?.data ?? anyRes
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `采购排行表_${new Date().toISOString().split('T')[0]}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    ElMessage.success('导出成功，已开始下载文件')
+  } catch (error: any) {
+    console.error('导出采购排行表失败', error)
+    ElMessage.error(error?.message || '导出采购排行表失败')
+  }
+}
+
+// ===================== 6. 分页事件 =====================
+
+const handleSizeChange = (size: number) => {
+  pageSize.value = size
+  currentPage.value = 1
+  fetchTableData()
+}
+
+const handleCurrentChange = (page: number) => {
+  currentPage.value = page
+  fetchTableData()
+}
+
+// ===================== 7. 初始化 =====================
+
+onMounted(() => {
+  fetchTableData()
+})
+</script>
+
+<style scoped>
+.sys.area {
+  position: relative;
+  padding: 16px;
+  height: calc(100vh - 32px); /* 减去padding */
+  display: flex;
+  flex-direction: column;
+  background: #f5f7fa;
+}
+
+/* 操作栏样式 */
+.operation-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 0;
+}
+
+.operation-left,
+.operation-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+}
+
+.search-btn,
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.more-actions .el-button {
+  justify-content: flex-start;
+  padding: 8px 16px;
+}
+
+/* 搜索弹框样式 */
+.search-popover {
+  padding: 0;
+}
+
+.search-form {
+  padding: 16px;
+}
+
+.form-item {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #606266;
+  font-weight: 500;
+}
+
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-separator {
+  color: #909399;
+  font-size: 12px;
+  width: 20px;
+  text-align: center;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e4e7ed;
+}
+
+.search-action-btn,
+.reset-action-btn {
+  min-width: 60px;
+}
+
+/* 分割线样式 */
+.custom-divider {
+  margin: 8px 0;
+  border-color: #e4e7ed;
+}
+
+/* 表格容器 - 占据剩余空间 */
+.table-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* 重要：防止flex item溢出 */
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* 表格样式 */
+:deep(.el-table) {
+  flex: 1;
+}
+
+:deep(.el-table .el-table__row) {
+  cursor: pointer;
+}
+
+/* 网状表格样式 */
+:deep(.grid-table) {
+  border: 1px solid #ebeef5;
+}
+
+:deep(.grid-table .el-table__header-wrapper) {
+  border-bottom: 1px solid #ebeef5;
+}
+
+:deep(.grid-table .el-table__cell) {
+  border-right: 1px solid #ebeef5;
+}
+
+:deep(.grid-table .el-table__row) {
+  border-bottom: 1px solid #ebeef5;
+}
+
+/* 高亮样式 */
+/* .quantity-highlight {
+  font-weight: bold;
+  color: #409EFF;
+}
+
+.total-highlight {
+  font-weight: bold;
+  color: #67C23A;
+}
+
+.total-cost-highlight {
+  font-weight: bold;
+  color: #E6A23C;
+} */
+
+/* 分页容器样式 - 移动到左下角 */
+.pagination-container {
+  padding: 12px 16px;
+  border-top: 1px solid #ebeef5;
+  background: #fafafa;
+  display: flex;
+}
+
+.pagination-left {
+  justify-content: flex-start;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .sys.area {
+    padding: 8px;
+    height: calc(100vh - 16px);
+  }
+
+  .operation-bar {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .operation-left,
+  .operation-right {
+    justify-content: center;
+  }
+
+  .operation-left {
+    border-bottom: 1px solid #e4e7ed;
+    padding-bottom: 12px;
+  }
+
+  .search-popover {
+    width: 280px !important;
+  }
+
+  :deep(.el-dialog) {
+    width: 90% !important;
+    max-width: 400px;
+  }
+
+  .pagination-container {
+    justify-content: center;
+  }
+}
+
+/* 美化滚动条 */
+:deep(.el-table__body-wrapper)::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+:deep(.el-table__body-wrapper)::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+:deep(.el-table__body-wrapper)::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+:deep(.el-table__body-wrapper)::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+</style>

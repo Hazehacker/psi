@@ -1,0 +1,6 @@
+CREATE TABLE Number (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
+    number_type VARCHAR(20) NOT NULL DEFAULT 'CGDD' COMMENT '单据类型',
+    number INT NOT NULL DEFAULT 0 COMMENT '流水号数字',
+    create_time varchar(20) DEFAULT '0000' COMMENT '创建时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='单据流水号表';
