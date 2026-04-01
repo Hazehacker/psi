@@ -14,32 +14,44 @@ public class SyncZipOutputStream extends OutputStream {
 
     private final OutputStream delegate;
     private final ZipOutputStream zipOut;
+    private final GZIPOutputStream gzipOut;
     private boolean isZipEntryOpen = false;
 
     /**
      * 创建 GZIP 压缩输出流
      */
     public static SyncZipOutputStream gzip(OutputStream out) throws IOException {
-        return new SyncZipOutputStream(out, new GZIPOutputStream(out), false);
+        return new SyncZipOutputStream(out, new GZIPOutputStream(out));
     }
 
     /**
      * 创建 ZIP 压缩输出流
      */
     public static SyncZipOutputStream zip(OutputStream out) {
-        ZipOutputStream zos = new ZipOutputStream(out);
-        return new SyncZipOutputStream(out, zos, true);
+        return new SyncZipOutputStream(out, new ZipOutputStream(out));
     }
 
-    private SyncZipOutputStream(OutputStream out, OutputStream inner, boolean isZip) {
+    // ZIP 模式构造函数
+    private SyncZipOutputStream(OutputStream out, ZipOutputStream zos) {
         this.delegate = out;
-        this.zipOut = (ZipOutputStream) inner;
+        this.zipOut = zos;
+        this.gzipOut = null;
+    }
+
+    // GZIP 模式构造函数
+    private SyncZipOutputStream(OutputStream out, GZIPOutputStream gzos) {
+        this.delegate = out;
+        this.gzipOut = gzos;
+        this.zipOut = null;
     }
 
     /**
      * 开始一个新的 ZIP 条目（仅 ZIP 模式需要）
      */
     public void putNextEntry(String entryName) {
+        if (zipOut == null) {
+            throw new IllegalStateException("putNextEntry is only available in ZIP mode");
+        }
         try {
             if (isZipEntryOpen) {
                 zipOut.closeEntry();
@@ -53,31 +65,52 @@ public class SyncZipOutputStream extends OutputStream {
 
     @Override
     public void write(int b) throws IOException {
-        zipOut.write(b);
+        if (zipOut != null) {
+            zipOut.write(b);
+        } else {
+            gzipOut.write(b);
+        }
     }
 
     @Override
     public void write(byte[] b) throws IOException {
-        zipOut.write(b);
+        if (zipOut != null) {
+            zipOut.write(b);
+        } else {
+            gzipOut.write(b);
+        }
     }
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-        zipOut.write(b, off, len);
+        if (zipOut != null) {
+            zipOut.write(b, off, len);
+        } else {
+            gzipOut.write(b, off, len);
+        }
     }
 
     @Override
     public void flush() throws IOException {
-        zipOut.flush();
+        if (zipOut != null) {
+            zipOut.flush();
+        } else {
+            gzipOut.flush();
+        }
     }
 
     @Override
     public void close() throws IOException {
-        if (isZipEntryOpen) {
+        if (isZipEntryOpen && zipOut != null) {
             zipOut.closeEntry();
             isZipEntryOpen = false;
         }
-        zipOut.finish();
+        if (zipOut != null) {
+            zipOut.finish();
+        }
+        if (gzipOut != null) {
+            gzipOut.finish();
+        }
         // 不关闭 delegate，由调用方管理
     }
 }
