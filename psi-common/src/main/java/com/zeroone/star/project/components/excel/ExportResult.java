@@ -89,7 +89,7 @@ public class ExportResult implements Serializable {
      * 获取压缩率
      */
     public double getCompressionRatio() {
-        if (compressedSize == 0) return 0;
+        if (originalSize == 0 || compressedSize == 0) return 0;
         return 1.0 - (double) compressedSize / originalSize;
     }
 
