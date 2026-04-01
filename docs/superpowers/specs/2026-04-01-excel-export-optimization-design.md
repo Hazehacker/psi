@@ -169,3 +169,15 @@ psi-common/src/main/java/com/zeroone/star/project/components/
 - 游标分页依赖自增主键 ID，不适用于无主键表
 - GZIP 压缩会略微增加 CPU 开销，建议仅对超大文件启用
 - 样式池需确保线程安全（Workbook 级）
+
+## 状态
+
+- [x] CursorPageQuery 接口
+- [x] CellStylePool 样式池
+- [x] SyncZipOutputStream 同步压缩输出流
+- [x] ExportResult 导出结果封装
+- [x] MybatisCursorPageQuery 实现
+- [x] StreamingExcelExporter 流式导出器
+- [x] EasyExcelComponent 重构
+- [x] BreServiceImpl 导出方法改造
+- [x] 单元测试
