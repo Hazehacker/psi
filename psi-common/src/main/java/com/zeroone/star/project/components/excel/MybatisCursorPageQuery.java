@@ -2,7 +2,6 @@ package com.zeroone.star.project.components.excel;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import java.util.List;
@@ -34,8 +33,7 @@ public class MybatisCursorPageQuery<T> implements CursorPageQuery<T> {
     public List<T> nextPage(Object lastId, int pageSize) {
         Page<T> page = new Page<>(1, pageSize, false); // current=1, size=pageSize, isSearchCount=false
         LambdaQueryWrapper<T> wrapper = wrapperBuilder.apply(lastId == null ? 0 : (Integer) lastId);
-        IPage<T> result = mapper.selectPage(page, wrapper);
-        return result.getRecords();
+        return mapper.selectPage(page, wrapper).getRecords();
     }
 
     @Override
@@ -46,8 +44,7 @@ public class MybatisCursorPageQuery<T> implements CursorPageQuery<T> {
         // 检查是否还有更多数据：查询比 lastId 大的记录是否存在
         LambdaQueryWrapper<T> wrapper = wrapperBuilder.apply((Integer) lastId);
         wrapper.last("LIMIT 1");
-        List<T> result = mapper.selectList(wrapper);
-        return !result.isEmpty();
+        return !mapper.selectList(wrapper).isEmpty();
     }
 
     /**
@@ -58,7 +55,9 @@ public class MybatisCursorPageQuery<T> implements CursorPageQuery<T> {
             return null;
         }
         try {
-            Object id = page.get(page.size() - 1).getClass().getMethod("getId").invoke(page.get(page.size() - 1));
+            T lastItem = page.get(page.size() - 1);
+            java.lang.reflect.Method idMethod = lastItem.getClass().getMethod("getId");
+            Object id = idMethod.invoke(lastItem);
             return (Integer) id;
         } catch (Exception e) {
             throw new RuntimeException("Failed to get last ID from page", e);
