@@ -26,6 +26,9 @@ public class StreamingExcelExporter {
     /** 默认最大sheet数量 */
     private static final int MAX_SHEET_COUNT = 50;
 
+    /** 每sheet最大行数（10倍页大小） */
+    private static final int MAX_ROWS_PER_SHEET = DEFAULT_PAGE_SIZE * 10;
+
     private final CellStylePool cellStylePool;
 
     public StreamingExcelExporter() {
@@ -98,17 +101,17 @@ public class StreamingExcelExporter {
                 long currentMemory = runtime.totalMemory() - runtime.freeMemory();
                 peakMemory = Math.max(peakMemory, currentMemory);
 
-                // 检查是否需要创建新sheet
-                if (totalRows / (sheetNo + 1) >= DEFAULT_PAGE_SIZE * 10 && sheetNo < MAX_SHEET_COUNT) {
+                // 检查是否有更多数据，再决定是否需要创建新sheet
+                if (!pageQuery.hasMore(lastId)) {
+                    break;
+                }
+
+                // 检查是否需要创建新sheet（在确认还有更多数据之后）
+                if (totalRows / (sheetNo + 1) >= MAX_ROWS_PER_SHEET && sheetNo < MAX_SHEET_COUNT) {
                     sheetNo++;
                     sheet = EasyExcel.writerSheet(sheetName + "_" + (sheetNo + 1))
                             .sheetNo(sheetNo)
                             .build();
-                }
-
-                // 检查是否有更多数据
-                if (!pageQuery.hasMore(lastId)) {
-                    break;
                 }
             }
 
