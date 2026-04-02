@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.report.mapper.ProductStockBalanceMapper">
+
+    <sql id="whereCore">
+        FROM room_info ri
+        JOIN room r           ON ri.pid = r.id
+        JOIN goods g          ON r.goods = g.id
+        LEFT JOIN warehouse w ON r.warehouse = w.id
+        WHERE 1=1
+        <if test="q.queryDate != null">
+            AND ri.time &lt; DATE_ADD(#{q.queryDate}, INTERVAL 1 DAY)
+        </if>
+        <if test="q.productName != null and q.productName != ''">
+            AND g.name LIKE CONCAT('%', #{q.productName}, '%')
+        </if>
+        <if test="q.warehouseId != null and q.warehouseId.size() &gt; 0">
+            AND r.warehouse IN
+            <foreach collection="q.warehouseId" item="wid" open="(" close=")" separator=",">
+                #{wid}
+            </foreach>
+        </if>
+    </sql>
+
+    <!-- 商品层分页（跨仓汇总） -->
+    <select id="pageHeads" resultType="com.zeroone.star.report.entity.Balance.ProductStockBalanceHeadDO">
+        SELECT
+        g.id     AS goodsId,
+        g.name   AS productName,
+        g.number AS productCode,
+        g.spec   AS specification,   -- 若字段不是 spec，请改成实际列
+        g.unit   AS unit,
+        SUM(CASE WHEN ri.direction = 1 THEN ri.nums ELSE -ri.nums END)                       AS totalQuantity,
+        SUM(ri.price * (CASE WHEN ri.direction = 1 THEN ri.nums ELSE -ri.nums END))          AS totalAmount,
+        CASE
+        WHEN SUM(CASE WHEN ri.direction = 1 THEN ri.nums ELSE -ri.nums END) = 0 THEN 0
+        ELSE SUM(ri.price * (CASE WHEN ri.direction = 1 THEN ri.nums ELSE -ri.nums END))
+        /  SUM(CASE WHEN ri.direction = 1 THEN ri.nums ELSE -ri.nums END)
+        END AS avgCost
+        <include refid="whereCore"/>
+        GROUP BY g.id
+        ORDER BY g.name
+    </select>
+
+    <!-- 商品层不分页（导出） -->
+    <select id="listHeads" resultType="com.zeroone.star.report.entity.Balance.ProductStockBalanceHeadDO">
+        SELECT
+        g.id     AS goodsId,
+        g.name   AS productName,
+        g.number AS productCode,
+        g.spec   AS specification,
+        g.unit   AS unit,
+        SUM(CASE WHEN ri.direction = 1 THEN ri.nums ELSE -ri.nums END)                       AS totalQuantity,
+        SUM(ri.price * (CASE WHEN ri.direction = 1 THEN ri.nums ELSE -ri.nums END))          AS totalAmount,
+        CASE
+        WHEN SUM(CASE WHEN ri.direction = 1 THEN ri.nums ELSE -ri.nums END) = 0 THEN 0
+        ELSE SUM(ri.price * (CASE WHEN ri.direction = 1 THEN ri.nums ELSE -ri.nums END))
+        /  SUM(CASE WHEN ri.direction = 1 THEN ri.nums ELSE -ri.nums END)
+        END AS avgCost
+        <include refid="whereCore"/>
+        GROUP BY g.id
+        ORDER BY g.name
+    </select>
+
+    <!-- 明细层（商品 × 仓库） -->
+    <select id="listDetailsByGoodsIds" resultType="com.zeroone.star.report.entity.Balance.ProductStockBalanceDetailDO">
+        SELECT
+        r.goods AS goodsId,
+        r.warehouse AS warehouseId,
+        w.name AS warehouseName,
+        SUM(CASE WHEN ri.direction = 1 THEN ri.nums ELSE -ri.nums END) AS quantity,
+        SUM(ri.price * (CASE WHEN ri.direction = 1 THEN ri.nums ELSE -ri.nums END)) AS amount,
+        CASE
+        WHEN SUM(CASE WHEN ri.direction = 1 THEN ri.nums ELSE -ri.nums END) = 0 THEN 0
+        ELSE SUM(ri.price * (CASE WHEN ri.direction = 1 THEN ri.nums ELSE -ri.nums END))
+        / SUM(CASE WHEN ri.direction = 1 THEN ri.nums ELSE -ri.nums END)
+        END AS cost
+        <include refid="whereCore"/>
+        AND r.goods IN
+        <foreach collection="goodsIds" item="gid" open="(" close=")" separator=",">
+            #{gid}
+        </foreach>
+        GROUP BY r.goods, r.warehouse
+        ORDER BY w.name
+    </select>
+</mapper>

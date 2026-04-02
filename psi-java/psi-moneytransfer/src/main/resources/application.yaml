@@ -1,0 +1,10 @@
+server:
+  port: ${sp.moneytransfer}
+spring:
+  application:
+    name: ${sn.moneytransfer}
+  cloud:
+    nacos:
+      discovery:
+        ip: 47.105.69.90
+        port: 18500

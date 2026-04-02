@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 批次信息Mapper映射文件 -->
+<mapper namespace="com.zeroone.star.storemanagement.mapper.BatchInfoMapper">
+
+    <!--
+        获取批次详情数据列表（分页）
+        功能：查询指定批次(pid)的详细操作记录，包含各类单据的批次变动信息
+        数据来源：主要从batch_info表获取，关联record表获取操作时间信息
+        返回类型：BatchDetailDTO - 包含pid、time、type、number、info、nums等字段
+    -->
+    <select id="getBatchDetail" resultType="com.zeroone.star.project.dto.j2.store.BatchDetailDTO"
+            parameterType="com.zeroone.star.project.query.j2.store.BatchDetailQuery">
+        SELECT
+        bi.pid AS pid,                   <!-- 批次唯一标识 -->
+        MAX(r.time) AS time,           <!-- 操作时间（取最新） -->
+        <!-- 将英文类型转换为中文显示 -->
+        CASE bi.type
+        WHEN 'entry' THEN '其他入库单'
+        WHEN 'extry' THEN '其他出库单'
+        WHEN 'swapOut' THEN '调拨单-出'
+        WHEN 'swapEnter' THEN '调拨单-入'
+        WHEN 'buy' THEN '采购单'
+        WHEN 'bre' THEN '采购退货单'
+        WHEN 'sell' THEN '销售单'
+        WHEN 'sre' THEN '销售退货单'
+        ELSE bi.type
+        END AS type,                <!-- 单据类型（中文显示） -->
+        <!-- 根据单据类型动态查询对应的单据编号-->
+        CASE
+        WHEN bi.type = 'entry' THEN (SELECT number FROM entry WHERE id = bi.class)
+        WHEN bi.type = 'extry' THEN (SELECT number FROM extry WHERE id = bi.class)
+        WHEN bi.type = 'swap' THEN (SELECT number FROM swap WHERE id = bi.class)
+        WHEN bi.type = 'swapOut' THEN (SELECT number FROM swap WHERE id = bi.class)
+        WHEN bi.type = 'swapEnter' THEN (SELECT number FROM swap WHERE id = bi.class)
+        WHEN bi.type = 'sell' THEN (SELECT number FROM sell WHERE id = bi.class)
+        WHEN bi.type = 'sre' THEN (SELECT number FROM sre WHERE id = bi.class)
+        WHEN bi.type = 'buy' THEN (SELECT number FROM buy WHERE id = bi.class)
+        WHEN bi.type = 'bre' THEN (SELECT number FROM bre WHERE id = bi.class)
+        ELSE ''
+        END AS number,                  <!-- 单据编号 -->
+        <!-- 方向转换为可读描述 -->
+        CASE bi.direction
+        WHEN 0 THEN '减少'           <!-- 出方向 -->
+        WHEN 1 THEN '增加'           <!-- 入方向 -->
+        ELSE ''
+        END AS info,                    <!-- 操作类型描述 -->
+        bi.nums AS nums                 <!-- 操作数量 -->
+        FROM
+        batch_info bi                <!-- 批次信息表 -->
+        LEFT JOIN
+        record r ON ((bi.type = 'swapOut' OR bi.type = 'swapEnter' OR bi.type = 'swap') AND r.type = 'swap' AND bi.class = r.source) OR
+                      (bi.type NOT IN ('swapOut', 'swapEnter', 'swap') AND bi.type = r.type AND bi.class = r.source)  <!-- 关联操作记录表 -->
+        LEFT JOIN
+        batch b ON bi.pid = b.id     <!-- 关联批次主表，用于仓库筛选 -->
+        WHERE
+        <if test="batchDetailQuery.pid != null and batchDetailQuery.pid.size() > 0">
+            bi.pid IN
+            <foreach collection="batchDetailQuery.pid" item="pidValue" open="(" close=")" separator=",">
+                #{pidValue}
+            </foreach>
+        </if>
+
+        <!-- 单据类型过滤条件 -->
+        <if test="batchDetailQuery.type != null and batchDetailQuery.type.size() > 0">
+            AND bi.type IN
+            <foreach collection="batchDetailQuery.type" item="typeValue" open="(" close=")" separator=",">
+                #{typeValue}
+            </foreach>
+        </if>
+
+        <!-- 时间范围过滤条件 -->
+        <if test="batchDetailQuery.startTime != null">
+            AND r.time >= STR_TO_DATE(#{batchDetailQuery.startTime}, '%Y-%m-%d')
+        </if>
+        <if test="batchDetailQuery.endTime != null">
+            AND r.time &lt;= STR_TO_DATE(#{batchDetailQuery.endTime}, '%Y-%m-%d')
+        </if>
+
+        <!-- 仓库ID过滤条件 -->
+        <if test="batchDetailQuery.warehouseIds != null and batchDetailQuery.warehouseIds.size() > 0">
+            AND b.warehouse IN
+            <foreach collection="batchDetailQuery.warehouseIds" item="warehouseId" open="(" close=")" separator=",">
+                #{warehouseId}
+            </foreach>
+        </if>
+        <!-- 单据编号模糊查询条件 -->
+        <if test="batchDetailQuery.number != null and batchDetailQuery.number != ''">
+            AND (
+                (bi.type = 'entry' AND (SELECT number FROM entry WHERE id = bi.class) LIKE CONCAT('%', #{batchDetailQuery.number}, '%')) OR
+                (bi.type = 'extry' AND (SELECT number FROM extry WHERE id = bi.class) LIKE CONCAT('%', #{batchDetailQuery.number}, '%')) OR
+                ((bi.type = 'swap' OR bi.type = 'swapOut' OR bi.type = 'swapEnter') AND (SELECT number FROM swap WHERE id = bi.class) LIKE CONCAT('%', #{batchDetailQuery.number}, '%')) OR
+                (bi.type = 'sell' AND (SELECT number FROM sell WHERE id = bi.class) LIKE CONCAT('%', #{batchDetailQuery.number}, '%')) OR
+                (bi.type = 'sre' AND (SELECT number FROM sre WHERE id = bi.class) LIKE CONCAT('%', #{batchDetailQuery.number}, '%')) OR
+                (bi.type = 'buy' AND (SELECT number FROM buy WHERE id = bi.class) LIKE CONCAT('%', #{batchDetailQuery.number}, '%')) OR
+                (bi.type = 'bre' AND (SELECT number FROM bre WHERE id = bi.class) LIKE CONCAT('%', #{batchDetailQuery.number}, '%'))
+            )
+        </if>
+
+        <!-- 分组条件，确保每一条记录代表一个唯一的批次操作 -->
+        GROUP BY
+        bi.pid,
+        bi.type,
+        bi.class,
+        number,
+        bi.direction,
+        bi.nums
+
+        <!-- 按操作时间倒序排列，最新操作在前 -->
+        ORDER BY
+        time DESC
+    </select>
+
+
+</mapper>

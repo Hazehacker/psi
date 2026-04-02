@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.storemanagement.mapper.RoomMapper">
+    <select id="selectWarehouseStockByGoodsIds" resultType="com.zeroone.star.project.dto.j2.store.WarehouseStockDTO">
+        SELECT
+            r.id as storedRecordId,
+            r.warehouse as warehouseId,
+            w.name as warehouseName,
+            r.goods as goodsId,
+            r.attr as attrId,
+            r.nums as stockNum
+        FROM room r
+        LEFT JOIN warehouse w ON r.warehouse = w.id
+        WHERE r.goods IN
+        <foreach collection="goodsIds" item="goodsId" open="(" close=")" separator=",">
+            #{goodsId}
+        </foreach>
+        ORDER BY r.goods, r.attr, r.warehouse
+    </select>
+
+    <select id="getRoomStocks" resultType="java.util.Map">
+        SELECT goods, warehouse, nums
+        FROM room
+        WHERE (goods, warehouse) IN
+        <foreach collection="paramList" item="param" open="(" separator="," close=")">
+            (#{param.goodsId}, #{param.warehouseId})
+        </foreach>
+    </select>
+</mapper>

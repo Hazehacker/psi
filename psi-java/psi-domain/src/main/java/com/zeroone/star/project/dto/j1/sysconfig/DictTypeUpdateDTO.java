@@ -1,0 +1,15 @@
+package com.zeroone.star.project.dto.j1.sysconfig;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+
+@Data
+@ApiModel("字典类型修改数据传输对象")
+public class DictTypeUpdateDTO extends DictTypeDTO {
+/**
+ * 根据id修改字典类型
+ */
+    @ApiModelProperty(value = "字典类型ID", required = true, example = "61f3bbc90b904b51890448968afc106f")
+    private String id;
+}

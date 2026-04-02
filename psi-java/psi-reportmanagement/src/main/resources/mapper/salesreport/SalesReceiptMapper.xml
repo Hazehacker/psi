@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.salesreport.SalesReceiptMapper">
+
+    <select id="selectSalesReceipt" resultType="com.zeroone.star.project.dto.j5.salesreport.SalesReceiptDTO">
+        select
+        type,
+        id,
+        frame,
+        customer,
+        time,
+        number,
+        total,
+        actual,
+        money as invoice_collection,
+        money - actual as accounts_receivable_balance,
+        (money / actual) * 100 as collection_rate,
+        nucleus,
+        data
+        from (
+        select
+        '销售单' as type,
+        sell.id,
+        frame.name as 'frame',
+        customer.name as 'customer',
+        sell.time,
+        sell.number,
+        sell.total,
+        sell.actual,
+        sell.money,
+        sell.nucleus,
+        sell.data
+
+        from sell
+        left join frame on sell.frame = frame.id
+        left join customer on sell.customer = customer.id
+        where examine = 1
+
+        union all
+
+        select
+        '销售退货单' as type,
+        sre.id,
+        frame.name as 'frame',
+        customer.name as 'customer',
+        sre.time,
+        sre.number,
+        sre.total,
+        sre.actual,
+        sre.money,
+        sre.nucleus,
+        sre.data
+
+        from sre
+        left join frame on sre.frame = frame.id
+        left join customer on sre.customer = customer.id
+        where examine = 1
+        ) as sales_receipt
+
+        <where>
+            <if test="query.customer != null and query.customer != ''">
+                and customer like concat('%', #{query.customer}, '%')
+            </if>
+            <if test="query.number != null and query.number != ''">
+                and number = #{query.number}
+            </if>
+            <if test="query.begintime != null and query.begintime != ''">
+                and time &gt;= #{query.begintime}
+            </if>
+            <if test="query.endtime != null and query.endtime != ''">
+                and time &lt;= #{query.endtime}
+            </if>
+            <if test="query.nucleus != null">
+                and nucleus = #{query.nucleus}
+            </if>
+            <if test="query.type != null and query.type != ''">
+                and type = #{query.type}
+            </if>
+        </where>
+        order by time desc
+    </select>
+
+
+    <select id="selectAllWithCondition"
+            resultType="com.zeroone.star.project.dto.j5.salesreport.SalesReceiptDTO">
+        select
+        type,
+        id,
+        frame,
+        customer,
+        time,
+        number,
+        total,
+        actual,
+        money as invoice_collection,
+        money - actual as accounts_receivable_balance,
+        (money / actual) * 100 as collection_rate,
+        nucleus,
+        data
+        from (
+        select
+        '销售单' as type,
+        sell.id,
+        frame.name as 'frame',
+        customer.name as 'customer',
+        sell.time,
+        sell.number,
+        sell.total,
+        sell.actual,
+        sell.money,
+        sell.nucleus,
+        sell.data
+
+        from sell
+        left join frame on sell.frame = frame.id
+        left join customer on sell.customer = customer.id
+        where examine = 1
+
+        union all
+
+        select
+        '销售退货单' as type,
+        sre.id,
+        frame.name as 'frame',
+        customer.name as 'customer',
+        sre.time,
+        sre.number,
+        sre.total,
+        sre.actual,
+        sre.money,
+        sre.nucleus,
+        sre.data
+
+        from sre
+        left join frame on sre.frame = frame.id
+        left join customer on sre.customer = customer.id
+        where examine = 1
+        ) as sales_receipt
+
+        <where>
+            <if test="query.customer != null and query.customer != ''">
+                and customer like concat('%', #{query.customer}, '%')
+            </if>
+            <if test="query.number != null and query.number != ''">
+                and number = #{query.number}
+            </if>
+            <if test="query.begintime != null and query.begintime != ''">
+                and time &gt;= #{query.begintime}
+            </if>
+            <if test="query.endtime != null and query.endtime != ''">
+                and time &lt;= #{query.endtime}
+            </if>
+            <if test="query.nucleus != null">
+                and nucleus = #{query.nucleus}
+            </if>
+            <if test="query.type != null and query.type != ''">
+                and type = #{query.type}
+            </if>
+        </where>
+        order by time desc
+    </select>
+</mapper>

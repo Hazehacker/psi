@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.sysconfig.mapper.TmplImportMapper">
+
+    <resultMap id="TempImportDownloadVOResultMap" type="com.zeroone.star.project.vo.j1.sysconfig.TempImportDownloadVO">
+        <id property="id" column="id"/>
+        <result property="templateName" column="name"/>
+        <result property="templateCode" column="code"/>
+        <result property="saveType" column="save_type"/>
+        <result property="downloadUrl" column="save_path"/>
+        <result property="remark" column="remark"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <select id="selectDownloadInfoById" resultMap="TempImportDownloadVOResultMap">
+        SELECT
+            id,
+            name,
+            code,
+            save_type,
+            save_path,
+            remark,
+            status
+        FROM tmpl_import
+        WHERE id = #{id}
+    </select>
+</mapper>

@@ -1,0 +1,10 @@
+package com.zeroone.star.project.dto.j8.report.wss_KazamataNeri;
+
+import io.swagger.annotations.ApiModel;
+import lombok.Data;
+
+@Data
+@ApiModel("期初(商品收发汇总表)")
+public class expectDTO extends WarehouseReportCommonDTO{
+
+}

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.purchase.mapper.BreInfoMapper">
+
+   <!--  根据采购退货单id查询退货商品详情  -->
+    <select id="selectPurchaseReturnGoodsDetail" resultType="com.zeroone.star.project.dto.j3.purchase.PurchaseReturnGoodsDetailDTO">
+        select
+            bi.id,
+            bi.pid,
+            g.name as goods,
+            g.number,
+            g.spec,
+            bi.attr,
+            bi.unit,
+            bi.warehouse,
+            bi.price,
+            bi.nums,
+            bi.total,
+            bi.tax,
+            bi.tat,
+            bi.tpt,
+            bi.data
+        FROM bre_info bi
+        LEFT JOIN goods g ON bi.goods = g.id
+        WHERE bi.pid = #{pid}
+    </select>
+
+</mapper>

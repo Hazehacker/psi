@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.salesreport.SalesRankingMapper">
+
+    <resultMap id="SalesRankingTableMap" type="com.zeroone.star.project.dto.j5.salesreport.SalesRankingTableDTO">
+        <!-- 映射 DTO 中的所有属性-->
+        <result column="productName" property="productName"/>
+        <result column="auxiliaryAttribute" property="auxiliaryAttribute"/>
+        <result column="productNumber" property="productNumber"/>
+        <result column="specificationModel" property="specificationModel"/>
+        <result column="unit" property="unit"/>
+        <result column="quantity" property="quantity"/>
+        <result column="discountAmount" property="discountAmount"/>
+        <result column="taxAmount" property="taxAmount"/>
+        <result column="totalAmountWithTax" property="totalAmountWithTax"/>
+        <result column="cost" property="cost"/>
+        <result column="totalCost" property="totalCost"/>
+        <result column="grossProfit" property="grossProfit"/>
+        <result column="grossProfitMargin" property="grossProfitMargin"/>
+    </resultMap>
+
+    <select id="getSalesRankingList" parameterType="com.zeroone.star.project.query.j5.salesreport.SalesRankingTableQury" resultMap="SalesRankingTableMap">
+        SELECT
+        sell_info.attr as auxiliaryAttribute,
+        sell_info.nums as quantity,
+        sell_info.discount as discountAmount,
+        sell_info.tat as taxAmount,
+        sell_info.tpt as totalAmountWithTax,
+        goods.name as productName,
+        goods.number as productNumber,
+        goods.spec as specificationModel,
+        goods.buy as cost,
+        (goods.buy * sell_info.nums) as totalCost,
+        sell_info.unit,
+        sell_info.price,
+        (sell_info.tpt - (goods.buy * sell_info.nums)) as grossProfit, <!-- 价税合计 - 总成本 = 毛利润 -->
+        CASE WHEN sell_info.tpt > 0 THEN
+        (sell_info.tpt - (goods.buy * sell_info.nums)) / sell_info.tpt
+        ELSE 0 END as grossProfitMargin <!-- 毛利率 = 毛利润 / 价税合计（避免除数为0） -->
+        FROM sell_info
+        INNER JOIN sell ON sell_info.pid = sell.id
+        INNER JOIN goods ON sell_info.goods = goods.id
+        WHERE sell.examine=1
+        <!-- 动态条件：商品名称模糊查询 -->
+        <if test="query.productName != null and query.productName != ''">
+            AND goods.name LIKE CONCAT('%', #{query.productName}, '%')
+        </if>
+        <!-- 动态条件：商品编号模糊查询 -->
+        <if test="query.productNumber != null and query.productNumber != ''">
+            AND goods.number LIKE CONCAT('%', #{query.productNumber}, '%')
+        </if>
+        <!-- 动态条件：开始时间 -->
+        <if test="query.begintime != null">
+            AND sell.time &gt;= #{query.begintime}
+        </if>
+        <!-- 动态条件：结束时间 -->
+        <if test="query.endTime != null">
+            AND sell.time &lt;= #{query.endtime}
+        </if>
+        ORDER BY (sell_info.price * sell_info.nums) DESC
+    </select>
+
+    <select id="getSalesRankingListNoPage" parameterType="com.zeroone.star.project.query.j5.salesreport.SalesRankingTableQury" resultMap="SalesRankingTableMap">
+        SELECT
+        sell_info.attr AS auxiliaryAttribute,
+        sell_info.nums AS quantity,
+        sell_info.discount AS discountAmount,
+        sell_info.tat AS taxAmount,
+        sell_info.tpt AS totalAmountWithTax,
+        goods.name AS productName,
+        goods.number AS productNumber,
+        goods.spec AS specificationModel,
+        goods.buy AS cost,
+        (goods.buy * sell_info.nums) AS totalCost,
+        sell_info.unit,
+        sell_info.price,
+        (sell_info.tpt - (goods.buy * sell_info.nums)) AS grossProfit,
+        CASE WHEN sell_info.tpt > 0 THEN
+        (sell_info.tpt - (goods.buy * sell_info.nums)) / sell_info.tpt
+        ELSE 0 END AS grossProfitMargin
+        FROM sell_info
+        INNER JOIN sell ON sell_info.pid = sell.id
+        INNER JOIN goods ON sell_info.goods = goods.id
+        WHERE sell.examine = 1
+        <if test="query.productName != null and query.productName != ''">
+            AND goods.name LIKE CONCAT('%', #{query.productName}, '%')
+        </if>
+        <if test="query.productNumber != null and query.productNumber != ''">
+            AND goods.number LIKE CONCAT('%', #{query.productNumber}, '%')
+        </if>
+        <if test="query.begintime != null">
+            AND sell.time &gt;= #{query.begintime}
+        </if>
+        <if test="query.endtime != null">
+            AND sell.time &lt;= #{query.endtime}
+        </if>
+        ORDER BY (sell_info.price * sell_info.nums) DESC
+    </select>
+
+
+
+
+
+</mapper>

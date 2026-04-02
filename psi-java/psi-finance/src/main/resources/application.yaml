@@ -1,0 +1,22 @@
+server:
+  port: ${sp.finance}
+spring:
+  application:
+    name: ${sn.finance}
+# pdf配置
+pdf:
+  # fop配置文件路径
+  conf: ./config/fop.xconf
+  # xsl-fo模板路径（目录）
+  template: ./config/freemarker
+
+logging:
+  level:
+    # MyBatis SQL 执行细节（包含SQL语句、参数、结果）
+    org.mybatis: DEBUG
+    # 数据库连接池（如Druid）的交互日志
+    com.alibaba.druid: DEBUG
+    # JDBC 底层交互日志（可按需开启，日志量较大）
+    java.sql: DEBUG
+    # 你的Mapper接口包路径（输出Mapper方法的调用细节）
+    com.zeroone.star.finance.mapper: DEBUG

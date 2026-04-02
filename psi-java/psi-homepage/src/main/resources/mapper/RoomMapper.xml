@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.homepage.mapper.RoomMapper">
+    <resultMap id="WareHouseRoomDtoMap" type="com.zeroone.star.project.dto.j1.homepage.WareHouseRoomDataDto">
+        <result column="warehouse" property="name"/>
+        <result column="value" property="value"/>
+    </resultMap>
+    <select id="selectWareHouseRoomDto" resultMap="WareHouseRoomDtoMap">
+        select warehouse.name as warehouse ,SUM(nums) AS value
+        from room  join warehouse on room.warehouse = warehouse.id
+        group by warehouse.name
+    </select>
+</mapper>

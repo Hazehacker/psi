@@ -1,0 +1,27 @@
+server:
+  port: ${sp.basicinformation}
+spring:
+  application:
+    name: ${sn.basicinformation}
+
+  datasource:
+    url: jdbc:mysql://121.40.149.36:3306/zo_psi?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: rE#-pmdQ;5.*
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+
+knife4j:
+  enableAggregation: false
+  nacos:
+    routes:
+      - name: 示例服务1
+        serviceName: ${sn.sample}
+        namespaceId: ${nacos.namespace}
+        location: /v2/api-docs?group=sample
+      - name: 示例服务2
+        serviceName: ${sn.sample}
+        namespaceId: ${nacos.namespace}
+        location: /v2/api-docs?group=sample
+
+

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.finance.mapper.otherexpense.OceDetailViewMapper">
+    <select id="selectById" resultType="com.zeroone.star.finance.entity.OceDetailViewDO">
+        SELECT o.id,
+               f.`name`           AS frame,
+               s.`name`           AS supplier,
+               o.time,
+               o.number,
+               o.total,
+               o.actual,
+               o.money,
+               COALESCE(b.sum, 0) AS writeOffAmount,
+               a.`name`           AS account,
+               p.`name`           AS people,
+               o.file,
+               o.`data`,
+               o.examine
+        FROM oce o
+                 LEFT JOIN (SELECT pid, SUM(money) AS sum
+                            FROM oce_bill
+                            GROUP BY pid) b ON b.pid = o.id
+                 LEFT JOIN supplier s ON s.id = o.supplier
+                 LEFT JOIN frame f ON f.id = o.frame
+                 LEFT JOIN people p ON p.id = o.people
+                 LEFT JOIN account a ON a.id = o.account
+        WHERE o.id = #{id}
+        GROUP BY o.id, s.name, o.time, o.number, f.name, o.total, o.actual, o.money,
+                 a.name, p.name, o.file, o.data;
+    </select>
+</mapper>

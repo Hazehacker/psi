@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.storemanagement.mapper.OtherOutMapper">
+    <resultMap id="ExtryDOMap" type="com.zeroone.star.storemanagement.entity.ExtryDO">
+        <id column="id" property="id"/>
+        <result column="frame" property="frame"/>
+        <result column="customer" property="customer"/>
+        <result column="type" property="type"/>
+
+        <!-- 关键修改：指定 typeHandler -->
+        <result column="time" property="time"/>
+
+        <result column="number" property="number"/>
+        <result column="total" property="total"/>
+        <result column="cost" property="cost"/>
+        <result column="people" property="people"/>
+        <result column="examine" property="examine"/>
+        <result column="cse" property="cse"/>
+        <result column="check" property="check"/>
+        <result column="user" property="user"/>
+        <result column="data" property="data"/>
+    </resultMap>
+    <select id="selectMainIds" parameterType="java.util.List" resultType="com.zeroone.star.project.dto.j2.store.OtherOutListDTO">
+        SELECT
+        e.id,
+        e.customer,
+        e.frame,
+        e.time,
+        e.number,
+        e.type,
+        e.total,
+        e.cost,
+        e.people,
+        e.logistics,
+        e.file,
+        e.data,
+        e.more,
+        e.examine,
+        e.cse,
+        e.check,
+        e.user
+        FROM extry e WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+    <insert id="insert">
+        insert into extry(id,customer,frame,time,number,type,total,cost,people,logistics,file,data,examine,cse,`check`,`user`)
+        values(#{id},#{customer},#{frame},#{time},#{number},#{type},#{total},#{cost},#{people},#{logistics},#{file},#{data},#{examine},#{cse},#{check},#{user})
+    </insert>
+
+    <!-- 结果映射 -->
+    <resultMap id="OtherOutListDTOMap" type="com.zeroone.star.project.dto.j2.store.OtherOutListDTO">
+        <id column="id" property="id"/>
+        <result column="frame" property="frame"/>
+        <result column="customer" property="customer"/>
+        <result column="type" property="type"/>
+        <result column="time" property="time"/>
+        <result column="number" property="number"/>
+        <result column="total" property="total"/>
+        <result column="cost" property="cost"/>
+        <result column="people" property="people"/>
+        <result column="examine" property="examine"/>
+        <result column="cse" property="cse"/>
+        <result column="check" property="check"/>
+        <result column="user" property="user"/>
+        <result column="data" property="data"/>
+    </resultMap>
+    <select id="selectOtherOutListPage" resultMap="ExtryDOMap">
+        SELECT DISTINCT
+        e.id,
+        e.frame,
+        IFNULL(s.name, '') AS supplier,
+        e.type,
+        e.time,
+        e.number,
+        e.total,
+        e.cost,
+        IFNULL(p.name, '') AS people,
+        e.examine,
+        e.cse,
+        e.check,
+        e.user,
+        e.data
+        FROM extry e
+        LEFT JOIN customer s ON e.customer = s.id
+        LEFT JOIN people p ON e.people = p.id
+        LEFT JOIN extry_info ei ON e.id = ei.pid
+        LEFT JOIN goods g ON ei.goods = g.id
+        WHERE 1=1
+        <!-- 商品名称查询 -->
+        <if test="query.name != null and query.name != ''">
+            AND g.name LIKE CONCAT('%', #{query.name}, '%')
+        </if>
+        <!-- 单据编号查询 -->
+        <if test="query.number != null and query.number != ''">
+            AND e.number LIKE CONCAT('%', #{query.number}, '%')
+        </if>
+        <!-- 客户查询 -->
+        <if test="query.customer != null and query.customer != ''">
+            AND s.name LIKE CONCAT('%', #{query.customer}, '%')
+        </if>
+        <!-- 制单人查询 -->
+        <if test="query.user != null and query.user != ''">
+            AND e.user LIKE CONCAT('%', #{query.user}, '%')
+        </if>
+        <!-- 关联人员查询 -->
+        <if test="query.people != null and query.people != ''">
+            AND p.name LIKE CONCAT('%', #{query.people}, '%')
+        </if>
+        <!-- 开始日期查询 -->
+        <if test="query.startTime != null and query.startTime != ''">
+            AND DATE(e.time) &gt;= DATE(#{query.startTime})
+        </if>
+        <!-- 结束日期查询 -->
+        <if test="query.endTime != null and query.endTime != ''">
+            AND DATE(e.time) &lt;= DATE(#{query.endTime})
+        </if>
+        <!-- 审核状态查询（-1表示全部，不添加条件） -->
+        <if test="query.examine != null and query.examine != -1">
+            AND e.examine = #{query.examine}
+        </if>
+        <!-- 费用状态查询（-1表示全部，不添加条件） -->
+        <if test="query.cse != null and query.cse != -1">
+            AND e.cse = #{query.cse}
+        </if>
+        <!-- 核对状态查询（-1表示全部，不添加条件） -->
+        <if test="query.check != null and query.check != -1">
+            AND e.check = #{query.check}
+        </if>
+        <!-- 单据类型查询 -->
+        <if test="query.type != null">
+            AND e.type = #{query.type}
+        </if>
+        <!-- 备注信息查询 -->
+        <if test="query.data != null and query.data != ''">
+            AND e.data LIKE CONCAT('%', #{query.data}, '%')
+        </if>
+        <!-- 所属组织查询 -->
+        <if test="query.frame != null and query.frame != ''">
+            AND e.frame = #{query.frame}
+        </if>
+        ORDER BY e.time DESC
+    </select>
+    <insert id="insertBatch" parameterType="com.zeroone.star.storemanagement.entity.ExtryDO">
+        INSERT INTO extry (
+            id,customer, frame, time, number, type,
+            total, cost, people, logistics, file,
+            data, more, examine, cse, `check`,
+            user
+        ) VALUES (
+                     #{id},#{customer}, #{frame}, #{time}, #{number}, #{type},
+                     #{total}, #{cost}, #{people}, #{logistics}, #{file},
+                     #{data}, #{more}, #{examine}, #{cse}, #{check},
+                     #{user}
+                 )
+    </insert>
+    <select id="getByIds" resultType="com.zeroone.star.storemanagement.entity.ExtryDO">
+        select id, customer, frame,  time, number, type, total, cost, people, logistics, file, data, examine, cse, `check`, user
+        from extry where id in
+        <foreach item="item" collection="ids" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </select>
+
+    <select id="selectById" resultType="com.zeroone.star.storemanagement.entity.ExtryDO">
+        select id, customer, frame, time, number, type, total, cost, people, logistics, file, data, examine, cse, `check`, `user`
+        from extry where id = #{id}
+    </select>
+
+    <select id="selectBatchIds" resultType="com.zeroone.star.storemanagement.entity.ExtryDO">
+        select id,customer, frame,  time, number, type, total, cost, people, logistics, file, data, examine, cse, `check`, `user`
+        from extry where id in
+        <foreach item="item" collection="ids" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </select>
+
+</mapper>

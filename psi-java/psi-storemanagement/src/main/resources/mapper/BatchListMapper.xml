@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.storemanagement.mapper.BatchListMapper">
+
+    <!-- 查询子分类ID -->
+    <select id="selectChildCategoryIds" resultType="java.lang.String">
+        SELECT id FROM category WHERE pid = #{parentId}
+    </select>
+
+    <!-- 分页查询批次商品列表 -->
+    <select id="selectBatchGoodsList" resultType="com.zeroone.star.project.dto.j2.store.BatchListDTO">
+        SELECT
+            g.id,
+            g.name,
+            g.number,
+            g.spec,
+            g.brand,
+            g.protect,
+            g.stock,
+            g.threshold,
+            g.category as categoryId,
+            c.name as categoryName,
+            <!-- 根据仓库条件计算总库存 -->
+            <choose>
+                <when test="query.warehouseIds != null and query.warehouseIds.size() > 0">
+                    COALESCE(SUM(
+                    CASE WHEN r.warehouse IN
+                    <foreach collection="query.warehouseIds" item="warehouseId" open="(" separator="," close=")">
+                        #{warehouseId}
+                    </foreach>
+                    THEN r.nums ELSE 0 END
+                    ), 0) as totalStock
+                </when>
+                <otherwise>
+                    COALESCE(SUM(r.nums), 0) as totalStock
+                </otherwise>
+            </choose>
+        FROM goods g
+        LEFT JOIN room r ON r.goods = g.id
+        LEFT JOIN category c ON g.category = c.id
+        <where>
+            <!-- 商品相关条件 -->
+            <if test="query.goodsName != null and query.goodsName != ''">
+                AND g.name LIKE CONCAT('%', #{query.goodsName}, '%')
+            </if>
+            <if test="query.goodsNumber != null and query.goodsNumber != ''">
+                AND g.number LIKE CONCAT('%', #{query.goodsNumber}, '%')
+            </if>
+            <if test="query.goodsSpec != null and query.goodsSpec != ''">
+                AND g.spec LIKE CONCAT('%', #{query.goodsSpec}, '%')
+            </if>
+            <if test="query.goodsCategoryIds != null and query.goodsCategoryIds.size() > 0">
+                AND g.category IN
+                <foreach collection="query.goodsCategoryIds" item="categoryId" open="(" separator="," close=")">
+                    #{categoryId}
+                </foreach>
+            </if>
+            <if test="query.goodsBrand != null and query.goodsBrand != ''">
+                AND g.brand LIKE CONCAT('%', #{query.goodsBrand}, '%')
+            </if>
+            <if test="query.goodsCode != null and query.goodsCode != ''">
+                AND g.code LIKE CONCAT('%', #{query.goodsCode}, '%')
+            </if>
+
+            <!-- 批次相关条件 -->
+            <if test="query.batchNumber != null and query.batchNumber != ''">
+                AND EXISTS (
+                SELECT 1 FROM batch b
+                WHERE b.goods = g.id
+                AND b.number LIKE CONCAT('%', #{query.batchNumber}, '%')
+                )
+            </if>
+            <if test="query.productDate != null">
+                AND EXISTS (
+                SELECT 1 FROM batch b
+                WHERE b.goods = g.id
+                AND DATE(b.time) = #{query.productDate}
+                )
+            </if>
+
+            <!-- SQL层面过滤 - 只查询在batch表有记录的商品 -->
+            AND EXISTS (
+                SELECT 1 FROM batch b
+                WHERE b.goods = g.id
+                <!-- 应用仓库条件到batch表 -->
+                <if test="query.warehouseIds != null and query.warehouseIds.size() > 0">
+                    AND b.warehouse IN
+                    <foreach collection="query.warehouseIds" item="warehouseId" open="(" separator="," close=")">
+                        #{warehouseId}
+                    </foreach>
+                </if>
+                <!-- 如果没有选择仓库，也要确保商品在至少一个仓库有batch记录 -->
+                <if test="query.warehouseIds == null or query.warehouseIds.size() == 0">
+                    AND b.warehouse IS NOT NULL  <!-- 确保有仓库关联 -->
+                </if>
+            )
+
+            <!-- 只查询启用批次的商品 -->
+            AND g.batch = 1
+        </where>
+        GROUP BY g.id, c.id, c.name
+        ORDER BY g.name
+    </select>
+
+    <!-- 查询商品属性库存信息 -->
+    <select id="selectGoodsAttrStock" resultType="com.zeroone.star.project.dto.j2.store.BatchAttrDTO">
+        SELECT
+            r.goods as goodsId,
+            r.attr as attrName,
+            SUM(r.nums) as attrStock
+        FROM room r
+        WHERE r.goods IN
+        <foreach collection="goodsIds" item="goodsId" open="(" separator="," close=")">
+            #{goodsId}
+        </foreach>
+        AND r.attr IS NOT NULL AND r.attr != ''
+        <!-- 仓库条件 -->
+        <if test="query.warehouseIds != null and query.warehouseIds.size() > 0">
+            AND r.warehouse IN
+            <foreach collection="query.warehouseIds" item="warehouseId" open="(" separator="," close=")">
+                #{warehouseId}
+            </foreach>
+        </if>
+        GROUP BY r.goods, r.attr
+    </select>
+
+    <!-- 批量查询批次详情信息 -->
+    <select id="selectBatchDocumentsByGoodsIds" resultType="com.zeroone.star.project.dto.j2.store.BatchDocumentDTO">
+        SELECT
+            b.id as batchId,
+            b.goods as goodsId,
+            r.attr as attrName,
+            b.number as batchNumber,
+            DATE(b.time) as productDate,
+            w.name as warehouseName,
+            b.nums
+        FROM batch b
+        LEFT JOIN warehouse w ON b.warehouse = w.id
+        LEFT JOIN room r ON b.room = r.id
+        WHERE b.goods IN
+        <foreach collection="goodsIds" item="goodsId" open="(" separator="," close=")">
+            #{goodsId}
+        </foreach>
+        <!-- 严格应用所有批次相关条件 -->
+        <if test="query.batchNumber != null and query.batchNumber != ''">
+            AND b.number LIKE CONCAT('%', #{query.batchNumber}, '%')
+        </if>
+        <if test="query.productDate != null">
+            AND DATE(b.time) = #{query.productDate}
+        </if>
+        <!-- 预警批次过滤：针对单条batch记录，使用stock字段 -->
+        <if test="query.batchState != null and query.batchState == 1">
+            AND b.nums <![CDATA[ <= ]]> (
+            SELECT g.stock FROM goods g WHERE g.id = b.goods
+            )
+        </if>
+        <!-- 仓库条件 -->
+        <if test="query.warehouseIds != null and query.warehouseIds.size() > 0">
+            AND b.warehouse IN
+            <foreach collection="query.warehouseIds" item="warehouseId" open="(" separator="," close=")">
+                #{warehouseId}
+            </foreach>
+        </if>
+        ORDER BY b.goods, r.attr, b.number, b.warehouse
+    </select>
+    <!-- 查询商品在各仓库的库存汇总 -->
+    <select id="selectGoodsWarehouseStock" resultType="com.zeroone.star.project.dto.j2.store.WarehouseStockDTO">
+        SELECT
+            r.goods as goodsId,
+            r.warehouse as warehouseId,
+            w.name as warehouseName,
+            SUM(r.nums) as stockNum
+        FROM room r
+        LEFT JOIN warehouse w ON r.warehouse = w.id
+        WHERE r.goods IN
+        <foreach collection="goodsIds" item="goodsId" open="(" separator="," close=")">
+            #{goodsId}
+        </foreach>
+        <!-- 仓库条件 -->
+        <if test="query.warehouseIds != null and query.warehouseIds.size() > 0">
+            AND r.warehouse IN
+            <foreach collection="query.warehouseIds" item="warehouseId" open="(" separator="," close=")">
+                #{warehouseId}
+            </foreach>
+        </if>
+        GROUP BY r.goods, r.warehouse, w.name
+        ORDER BY r.goods, r.warehouse
+    </select>
+</mapper>

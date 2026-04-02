@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.storemanagement.mapper.CostMapper">
+
+    <insert id="insertBatch">
+        insert into cost (id,type, class, time, iet, money, data, settle, state) values
+        <foreach collection="costList" item="item" separator=",">
+            (#{item.id},#{item.type},#{item.cls},#{item.time},#{item.iet},#{item.money},#{item.data},#{item.settle},#{item.state})
+        </foreach>
+    </insert>
+
+    <update id="updateById" parameterType="com.zeroone.star.storemanagement.entity.CostDO">
+        UPDATE cost
+        <set>
+            <if test="type != null">type = #{type},</if>
+            <if test="cls != null">class = #{cls},</if>
+            <if test="time != null">time = #{time},</if>
+            <if test="iet != null">iet = #{iet},</if>
+            <if test="money != null">money = #{money},</if>
+            <if test="data != null">data = #{data},</if>
+            <if test="settle != null">settle = #{settle},</if>
+            <if test="state != null">state = #{state}</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <insert id="insert" parameterType="com.zeroone.star.storemanagement.entity.CostDO">
+        INSERT INTO cost (id, type, class, time, iet, money, data, settle, state)
+        VALUES (#{id}, #{type}, #{cls}, #{time}, #{iet}, #{money}, #{data}, #{settle}, #{state})
+    </insert>
+</mapper>

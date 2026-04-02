@@ -1,0 +1,16 @@
+server:
+  port: ${sp.reportmanagement}
+spring:
+  application:
+    name: ${sn.reportmanagement}
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.zeroone.star.reportmanagement.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    com.zeroone.star.patrolmgt.mapper: debug

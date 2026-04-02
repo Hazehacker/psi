@@ -1,0 +1,515 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.finance.mapper.tradeexpense.TradeExpenseMapper">
+
+    <select id="queryTradeExpensePage"
+            resultType="com.zeroone.star.finance.entity.TradeExpenseDO">
+        SELECT
+        c.id,
+
+        CASE c.type
+        WHEN 'buy' THEN '采购单'
+        WHEN 'bre' THEN '采购退货单'
+        WHEN 'sell' THEN '销售单'
+        WHEN 'sre' THEN '销售退货单'
+        WHEN 'entry' THEN '其它入库单'
+        WHEN 'extry' THEN '其它出库单'
+        WHEN 'swap' THEN '调拨单'
+        ELSE c.type
+        END AS documentType,
+
+        -- 组织、往来单位
+        fr.name AS organization,
+        COALESCE(sp.name, cu.name) AS partnerUnit,
+
+        -- 单据日期 / 编号（取对应 type 的抬头）
+        DATE_FORMAT(COALESCE(buy.time, bre.time, sel.time, sre.time, ent.time, ext.time, swp.time), '%Y-%m-%d') AS
+        documentDate,
+        COALESCE(buy.number, bre.number, sel.number, sre.number, ent.number, ext.number, swp.number) AS documentNumber,
+
+        -- 费用类别
+        iet.name AS expenseType,
+
+        -- 结算状态与金额
+        CASE
+        WHEN IFNULL(SUM(ci.money),0) = 0 THEN '未结算'
+        WHEN IFNULL(SUM(ci.money),0) &lt; c.money THEN '部分结算'
+        ELSE '已结算'
+        END AS settlementStatus,
+
+        c.money AS amount,
+        IFNULL(SUM(ci.money),0) AS settledAmount,
+        (c.money - IFNULL(SUM(ci.money),0)) AS unsettledAmount,
+        IFNULL(SUM(ci.money),0) AS settlementAmount
+
+        FROM cost c
+        LEFT JOIN iet ON iet.id = c.iet
+
+        /* 6 类上游抬头：用 c.class 关联 */
+        LEFT JOIN buy ON c.type='buy' AND buy.id = c.class
+        LEFT JOIN bre ON c.type='bre' AND bre.id = c.class
+        LEFT JOIN sell sel ON c.type='sell' AND sel.id = c.class
+        LEFT JOIN sre ON c.type='sre' AND sre.id = c.class
+        LEFT JOIN entry ent ON c.type='entry' AND ent.id = c.class
+        LEFT JOIN extry ext ON c.type='extry' AND ext.id = c.class
+        LEFT JOIN swap swp ON c.type='swap' AND swp.id = c.class
+
+        /* 组织、往来 */
+        LEFT JOIN frame fr ON fr.id = COALESCE(buy.frame, bre.frame, sel.frame, sre.frame, ent.frame, ext.frame,
+        swp.frame)
+        LEFT JOIN supplier sp ON sp.id = COALESCE(buy.supplier, bre.supplier, ent.supplier)
+        LEFT JOIN customer cu ON cu.id = COALESCE(sel.customer, sre.customer, ext.customer)
+
+        /* 费用结算明细 */
+        LEFT JOIN cost_info ci ON ci.pid = c.id
+
+        <where>
+            <!-- 单据类型过滤（如不需要可整段删除） -->
+            <if test="query.documentType != null and query.documentType.size > 0">
+                AND c.type IN
+                <foreach collection="query.documentType" item="dt" open="(" separator="," close=")">
+                    #{dt}
+                </foreach>
+            </if>
+
+            <!-- 费用类别 -->
+            <if test="query.expenseCategoryId != null and query.expenseCategoryId.size > 0">
+                AND c.iet IN
+                <foreach collection="query.expenseCategoryId" item="et" open="(" separator="," close=")">
+                    #{et}
+                </foreach>
+            </if>
+
+            <!-- 供应商（buy/bre/entry） -->
+            <if test="query.supplierId != null and query.supplierId != ''">
+                AND (
+                (c.type='buy' AND buy.supplier = #{query.supplierId}) OR
+                (c.type='bre' AND bre.supplier = #{query.supplierId}) OR
+                (c.type='entry' AND ent.supplier = #{query.supplierId})
+                )
+            </if>
+
+            <!-- 客户（sell/sre/extry） -->
+            <if test="query.customerId != null and query.customerId != ''">
+                AND (
+                (c.type='sell' AND sel.customer = #{query.customerId}) OR
+                (c.type='sre' AND sre.customer = #{query.customerId}) OR
+                (c.type='extry' AND ext.customer = #{query.customerId})
+                )
+            </if>
+
+            <!-- 单据编号模糊 -->
+            <if test="query.orderNumber != null and query.orderNumber != ''">
+                AND (
+                buy.number LIKE CONCAT('%', #{query.orderNumber}, '%') OR
+                bre.number LIKE CONCAT('%', #{query.orderNumber}, '%') OR
+                sel.number LIKE CONCAT('%', #{query.orderNumber}, '%') OR
+                sre.number LIKE CONCAT('%', #{query.orderNumber}, '%') OR
+                ent.number LIKE CONCAT('%', #{query.orderNumber}, '%') OR
+                ext.number LIKE CONCAT('%', #{query.orderNumber}, '%')
+                )
+            </if>
+
+            <!-- 单据日期区间（取上游抬头时间；若想直接用 cost.time，把两处 COALESCE 换成 c.time） -->
+            <if test="query.startDate != null">
+                AND DATE(COALESCE(buy.time, bre.time, sel.time, sre.time, ent.time, ext.time)) &gt;= #{query.startDate}
+            </if>
+            <if test="query.endDate != null">
+                AND DATE(COALESCE(buy.time, bre.time, sel.time, sre.time, ent.time, ext.time)) &lt;= #{query.endDate}
+            </if>
+
+            <!-- 结算状态（0/1/2） -->
+            <if test="query.settleStatus != null and query.settleStatus.size > 0">
+                AND (
+                <foreach collection="query.settleStatus" item="ss" separator=" OR ">
+                    (
+                    (#{ss} = 0 AND IFNULL((SELECT SUM(x.money) FROM cost_info x WHERE x.pid=c.id),0) = 0) OR
+                    (#{ss} = 1 AND IFNULL((SELECT SUM(x.money) FROM cost_info x WHERE x.pid=c.id),0) BETWEEN 0.0000001
+                    AND c.money-0.0000001) OR
+                    (#{ss} = 2 AND IFNULL((SELECT SUM(x.money) FROM cost_info x WHERE x.pid=c.id),0) &gt;= c.money)
+                    )
+                </foreach>
+                )
+            </if>
+        </where>
+
+        GROUP BY
+        c.id, c.money,
+        fr.name, sp.name, cu.name, iet.name,
+        buy.id, bre.id, sel.id, sre.id, ent.id, ext.id, swp.id,
+        buy.time, bre.time, sel.time, sre.time, ent.time, ext.time, swp.time,
+        buy.number, bre.number, sel.number, sre.number, ent.number, ext.number, swp.number
+
+        ORDER BY COALESCE(buy.time, bre.time, sel.time, sre.time, ent.time, ext.time) DESC, c.id DESC
+    </select>
+
+
+    <!-- 分页查询 -->
+    <select id="queryTradeExpenseReportPage"
+            resultType="com.zeroone.star.project.dto.j8.finance.tradeexpense.TradeExpenseReportDTO">
+        SELECT
+        /* 主键 */
+        c.id,
+
+        CASE c.type
+        WHEN 'buy' THEN '采购单'
+        WHEN 'bre' THEN '采购退货单'
+        WHEN 'sell' THEN '销售单'
+        WHEN 'sre' THEN '销售退货单'
+        WHEN 'entry' THEN '其它入库单'
+        WHEN 'extry' THEN '其它出库单'
+        WHEN 'swap' THEN '调拨单'
+        ELSE c.type
+        END AS documentType,
+
+        /* 组织 , 往来 */
+        fr.name AS organization,
+        IF(c.type = 'swap', '-', COALESCE(sp.name, cu.name)) AS partnerUnit,
+
+        /* 单据日期 , 编号：优先上游抬头，其次 cost 自身兜底 */
+        DATE_FORMAT(
+        COALESCE(buy.time, bre.time, sel.time, sre.time, ent.time, ext.time, swp.time, c.time),
+        '%Y-%m-%d'
+        ) AS documentDate,
+        COALESCE(buy.number, bre.number, sel.number, sre.number, ent.number, ext.number, swp.number, c.class)
+        AS documentNumber,
+
+        /* 费用类别 */
+        iet.name AS expenseType,
+
+        /* 结算状态（由明细求和得出） */
+        CASE
+        WHEN IFNULL(SUM(ci.money), 0) = 0 THEN '未结算'
+        WHEN IFNULL(SUM(ci.money), 0) &lt; c.money THEN '部分结算'
+        ELSE '已结算'
+        END AS settlementStatus,
+
+
+        /* 金额 = cost.money */
+        c.money AS amount
+        FROM cost c
+        LEFT JOIN iet ON iet.id = c.iet
+
+        /* 七类上游抬头（兼容 class 存 id 或 number） */
+        LEFT JOIN buy ON c.type = 'buy' AND (buy.id = c.class OR buy.number = c.class)
+        LEFT JOIN bre ON c.type = 'bre' AND (bre.id = c.class OR bre.number = c.class)
+        LEFT JOIN sell sel ON c.type = 'sell' AND (sel.id = c.class OR sel.number = c.class)
+        LEFT JOIN sre ON c.type = 'sre' AND (sre.id = c.class OR sre.number = c.class)
+        LEFT JOIN entry ent ON c.type = 'entry' AND (ent.id = c.class OR ent.number = c.class)
+        LEFT JOIN extry ext ON c.type = 'extry' AND (ext.id = c.class OR ext.number = c.class)
+        LEFT JOIN swap swp ON c.type = 'swap' AND (swp.id = c.class OR swp.number = c.class)
+
+        /* 组织、往来 */
+        LEFT JOIN frame fr ON fr.id = COALESCE(buy.frame, bre.frame, sel.frame, sre.frame, ent.frame, ext.frame,
+        swp.frame)
+        LEFT JOIN supplier sp ON sp.id = COALESCE(buy.supplier, bre.supplier, ent.supplier)
+        LEFT JOIN customer cu ON cu.id = COALESCE(sel.customer, sre.customer, ext.customer)
+
+        /* 费用结算明细（用于求已结算金额） */
+        LEFT JOIN cost_info ci ON ci.pid = c.id
+
+        <where>
+            <!-- 供应商过滤：适用于 buy / bre / entry -->
+            <if test="query.supplierId != null and query.supplierId != ''">
+                AND (
+                (c.type = 'buy' AND buy.supplier = #{query.supplierId}) OR
+                (c.type = 'bre' AND bre.supplier = #{query.supplierId}) OR
+                (c.type = 'entry' AND ent.supplier = #{query.supplierId})
+                )
+            </if>
+
+            <!-- 客户过滤：适用于 sell / sre / extry -->
+            <if test="query.customerId != null and query.customerId != ''">
+                AND (
+                (c.type = 'sell' AND sel.customer = #{query.customerId}) OR
+                (c.type = 'sre' AND sre.customer = #{query.customerId}) OR
+                (c.type = 'extry' AND ext.customer = #{query.customerId})
+                )
+            </if>
+
+            <!-- 单号模糊：覆盖七张上游 + 兜底 class -->
+            <if test="query.documentNumber != null and query.documentNumber != ''">
+                AND (
+                buy.number LIKE CONCAT('%', #{query.documentNumber}, '%') OR
+                bre.number LIKE CONCAT('%', #{query.documentNumber}, '%') OR
+                sel.number LIKE CONCAT('%', #{query.documentNumber}, '%') OR
+                sre.number LIKE CONCAT('%', #{query.documentNumber}, '%') OR
+                ent.number LIKE CONCAT('%', #{query.documentNumber}, '%') OR
+                ext.number LIKE CONCAT('%', #{query.documentNumber}, '%') OR
+                swp.number LIKE CONCAT('%', #{query.documentNumber}, '%') OR
+                c.class LIKE CONCAT('%', #{query.documentNumber}, '%')
+                )
+            </if>
+
+            <!-- 费用类别（数组） -->
+            <if test="query.expenseTypeId != null and query.expenseTypeId.size > 0">
+                AND c.iet IN
+                <foreach collection="query.expenseTypeId" item="eid" open="(" separator="," close=")">
+                    #{eid}
+                </foreach>
+            </if>
+
+            <!-- 时间区间：用上游 time 兜底 cost.time -->
+            <if test="query.startDate != null">
+                AND DATE(COALESCE(buy.time, bre.time, sel.time, sre.time, ent.time, ext.time, swp.time, c.time)) &gt;=
+                #{query.startDate}
+            </if>
+            <if test="query.endDate != null">
+                AND DATE(COALESCE(buy.time, bre.time, sel.time, sre.time, ent.time, ext.time, swp.time, c.time)) &lt;=
+                #{query.endDate}
+            </if>
+
+            <!-- 结算状态（数组：1=部分结算，2=已结算）。若希望完全以 c.state 判定，可直接用 c.state IN (...) -->
+            <if test="query.settlementStatus != null and query.settlementStatus.size > 0">
+                AND c.state IN
+                <foreach collection="query.settlementStatus" item="ss" open="(" separator="," close=")">
+                    #{ss}
+                </foreach>
+            </if>
+
+            <!-- 单据类型（数组）：buy, bre, sell, sre, entry, extry, swap -->
+            <if test="query.documentType != null and query.documentType.size > 0">
+                AND c.type IN
+                <foreach collection="query.documentType" item="dt" open="(" separator="," close=")">
+                    #{dt}
+                </foreach>
+            </if>
+        </where>
+
+        /* 为了 PageHelper 的 count(*) 包裹子查询，需稳定的 GROUP BY */
+        GROUP BY
+        c.id, c.money,
+        fr.name, sp.name, cu.name, iet.name,
+        buy.id, bre.id, sel.id, sre.id, ent.id, ext.id, swp.id,
+        buy.time, bre.time, sel.time, sre.time, ent.time, ext.time, swp.time, c.time,
+        buy.number, bre.number, sel.number, sre.number, ent.number, ext.number, swp.number, c.class
+
+        ORDER BY COALESCE(buy.time, bre.time, sel.time, sre.time, ent.time, ext.time, swp.time, c.time) DESC, c.id DESC
+    </select>
+
+
+    <select id="selectInfosById"
+            resultType="com.zeroone.star.project.dto.j8.finance.tradeexpense.ReportInfoDTO">
+        SELECT ci.id,
+               fr.name                         AS organization,
+               sp.name                         AS partnerUnit,
+               DATE_FORMAT(o.time, '%Y-%m-%d') AS documentDate,
+               o.number                        AS documentNumber,
+               ci.money                        AS amount
+        FROM cost_info ci
+                 LEFT JOIN oce o ON o.id = ci.oce
+                 LEFT JOIN frame fr ON fr.id = o.frame
+                 LEFT JOIN supplier sp ON sp.id = o.supplier
+        WHERE ci.pid = #{id}
+        ORDER BY o.time, ci.id
+    </select>
+
+
+    <select id="getSettles"
+            resultType="com.zeroone.star.project.dto.j8.finance.tradeexpense.CostDTO">
+        SELECT
+        c.id,
+        c.data,
+        i.name AS type,
+        c.money
+        FROM cost c
+        LEFT JOIN iet i ON c.iet = i.id
+        WHERE c.id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        /* 只返回未结算完的单据 */
+        AND c.state &lt; 2
+    </select>
+
+    <select id="queryTradeExpense"
+            resultType="com.zeroone.star.finance.entity.TradeExpenseDO">
+        SELECT
+        /* 主键 */
+        c.id,
+
+        CASE c.type
+        WHEN 'buy' THEN '采购单'
+        WHEN 'bre' THEN '采购退货单'
+        WHEN 'sell' THEN '销售单'
+        WHEN 'sre' THEN '销售退货单'
+        WHEN 'entry' THEN '其它入库单'
+        WHEN 'extry' THEN '其它出库单'
+        WHEN 'swap' THEN '调拨单'
+        ELSE c.type
+        END AS documentType,
+
+        /* 组织、往来 */
+        fr.name AS organization,
+        IF(c.type = 'swap', '-', COALESCE(sp.name, cu.name)) AS partnerUnit,
+
+        /* 单据日期、编号：优先上游抬头，其次用 cost 自身兜底 */
+        DATE_FORMAT(
+        COALESCE(buy.time, bre.time, sel.time, sre.time, ent.time, ext.time, swp.time, c.time),
+        '%Y-%m-%d'
+        ) AS documentDate,
+        COALESCE(buy.number, bre.number, sel.number, sre.number, ent.number, ext.number, swp.number, c.class)
+        AS documentNumber,
+
+        /* 费用类别 */
+        iet.name AS expenseType,
+
+        /* 结算状态（由明细求和得出） */
+        CASE
+        WHEN IFNULL(SUM(ci.money), 0) = 0 THEN '未结算'
+        WHEN IFNULL(SUM(ci.money), 0) &lt; c.money THEN '部分结算'
+        ELSE '已结算'
+        END AS settlementStatus,
+
+        /* 金额 */
+        c.money AS amount,
+        IFNULL(SUM(ci.money), 0) AS settledAmount,
+        (c.money - IFNULL(SUM(ci.money), 0)) AS unsettledAmount,
+        IFNULL(SUM(ci.money), 0) AS settlementAmount
+
+        FROM cost c
+        LEFT JOIN iet ON iet.id = c.iet
+
+        /* 7 类上游抬头（兼容 class 存 id 或 number） */
+        LEFT JOIN buy ON c.type = 'buy' AND (buy.id = c.class OR buy.number = c.class)
+        LEFT JOIN bre ON c.type = 'bre' AND (bre.id = c.class OR bre.number = c.class)
+        LEFT JOIN sell sel ON c.type = 'sell' AND (sel.id = c.class OR sel.number = c.class)
+        LEFT JOIN sre ON c.type = 'sre' AND (sre.id = c.class OR sre.number = c.class)
+        LEFT JOIN entry ent ON c.type = 'entry' AND (ent.id = c.class OR ent.number = c.class)
+        LEFT JOIN extry ext ON c.type = 'extry' AND (ext.id = c.class OR ext.number = c.class)
+        LEFT JOIN swap swp ON c.type = 'swap' AND (swp.id = c.class OR swp.number = c.class)
+
+        /* 组织、往来 */
+        LEFT JOIN frame fr ON fr.id = COALESCE(buy.frame, bre.frame, sel.frame, sre.frame, ent.frame, ext.frame,
+        swp.frame)
+        LEFT JOIN supplier sp ON sp.id = COALESCE(buy.supplier, bre.supplier, ent.supplier)
+        LEFT JOIN customer cu ON cu.id = COALESCE(sel.customer, sre.customer, ext.customer)
+
+        /* 费用结算明细（用于求已结算金额） */
+        LEFT JOIN cost_info ci ON ci.pid = c.id
+
+        WHERE c.id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+
+        /* 为了避免因明细多行导致重复，做稳定分组 */
+        GROUP BY
+        c.id, c.money,
+        fr.name, sp.name, cu.name, iet.name,
+        buy.id, bre.id, sel.id, sre.id, ent.id, ext.id, swp.id,
+        buy.time, bre.time, sel.time, sre.time, ent.time, ext.time, swp.time, c.time,
+        buy.number, bre.number, sel.number, sre.number, ent.number, ext.number, swp.number, c.class
+
+        ORDER BY
+        COALESCE(buy.time, bre.time, sel.time, sre.time, ent.time, ext.time, swp.time, c.time) DESC,
+        c.id DESC
+    </select>
+    <select id="getReportData"
+            resultType="com.zeroone.star.project.dto.j8.finance.tradeexpense.TradeExpenseResponseDTO">
+        SELECT
+            r.id AS id,
+            r.source AS clazz,
+            CASE r.type
+                WHEN 'sell' THEN '销售单'
+                WHEN 'buy' THEN '采购单'
+                WHEN 'sre' THEN '销售退货单'
+                WHEN 'bre' THEN '采购退货单'
+                ELSE '其它单'
+                END AS documentType,
+            CASE
+                WHEN r.type IN ('buy') THEN f.name
+                WHEN r.type IN ('sell') THEN f.name
+                WHEN r.type IN ('sre') THEN f.name
+                WHEN r.type IN ('bre') THEN f.name
+                ELSE '默认组织'
+                END AS organization,
+            CASE
+                WHEN r.type IN ('buy') THEN supplier.name
+                WHEN r.type IN ('sell') THEN customer.name
+                WHEN r.type IN ('sre') THEN customer.name
+                ELSE supplier.name
+                END AS partnerUnit,
+            CASE
+                WHEN r.type IN ('buy') THEN b.time
+                WHEN r.type IN ('sell') THEN s.time
+                WHEN r.type IN ('sre') THEN sr.time
+                ELSE br.time
+                END AS documentDate,
+            CASE
+                WHEN r.type IN ('buy') THEN b.number
+                WHEN r.type IN ('sell') THEN s.number
+                WHEN r.type IN ('sre') THEN sr.number
+                ELSE br.number
+                END AS documentNumber,
+            COALESCE(bb.type, sb.type, srb.type) AS expenseType,
+            CASE
+                WHEN r.type IN ('buy') THEN b.total
+                WHEN r.type IN ('sell') THEN s.total
+                WHEN r.type IN ('sre') THEN sr.total
+                ELSE br.total
+                END AS amount,
+            CASE
+                WHEN r.type IN ('buy') THEN
+                    CASE b.cse
+                        WHEN 0 THEN '未结算'
+                        WHEN 1 THEN '部分结算'
+                        WHEN 2 THEN '已结算'
+                        WHEN 3 THEN '无需结算'
+                        ELSE '未知'
+                        END
+                WHEN r.type IN ('sell') THEN
+                    CASE s.cse
+                        WHEN 0 THEN '未结算'
+                        WHEN 1 THEN '部分结算'
+                        WHEN 2 THEN '已结算'
+                        WHEN 3 THEN '无需结算'
+                        ELSE '未知'
+                        END
+                WHEN r.type IN ('sre') THEN
+                    CASE sr.cse
+                        WHEN 0 THEN '未结算'
+                        WHEN 1 THEN '部分结算'
+                        WHEN 2 THEN '已结算'
+                        WHEN 3 THEN '无需结算'
+                        ELSE '未知'
+                        END
+                ELSE
+                    CASE br.cse
+                        WHEN 0 THEN '未结算'
+                        WHEN 1 THEN '部分结算'
+                        WHEN 2 THEN '已结算'
+                        WHEN 3 THEN '无需结算'
+                        ELSE '未知'
+                        END
+                END AS settlementStatus
+        FROM record r
+                 LEFT JOIN buy b ON r.source = b.id AND r.type IN ('buy')
+                 LEFT JOIN sell s ON r.source = s.id AND r.type IN ('sell')
+                 LEFT JOIN bre br ON r.source = br.id AND r.type IN ('bre')
+                 LEFT JOIN sre sr ON r.source = sr.id AND r.type IN ('sre')
+                 LEFT JOIN buy_bill bb ON bb.pid = r.source
+                 LEFT JOIN sell_bill sb ON sb.pid = r.source
+                 LEFT JOIN bre_bill brb ON brb.pid = r.source
+                 LEFT JOIN sre_bill srb ON srb.pid = r.source
+                 LEFT JOIN frame f ON (
+                    (b.frame IS NOT NULL AND f.id = b.frame)
+                        OR (s.frame IS NOT NULL AND f.id = s.frame)
+                        OR (sr.frame IS NOT NULL AND f.id = sr.frame)
+                        OR (br.frame IS NOT NULL AND f.id = br.frame)
+                    )
+                 LEFT JOIN supplier ON (
+                        (b.supplier IS NOT NULL AND supplier.id = b.supplier)
+                        OR (br.supplier IS NOT NULL AND supplier.id = br.supplier)
+                    )
+                  LEFT JOIN customer ON (
+                         (s.customer IS NOT NULL AND customer.id = s.customer)
+                          OR (sr.customer IS NOT NULL AND customer.id = sr.customer)
+                        )
+        WHERE r.source IS NOT NULL
+          AND (bb.money IS NOT NULL
+            OR sb.money IS NOT NULL
+            OR srb.money IS NOT NULL )
+        ORDER BY r.time DESC;
+    </select>
+</mapper>

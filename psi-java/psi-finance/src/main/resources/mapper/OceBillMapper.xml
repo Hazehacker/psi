@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.finance.mapper.OceBillMapper">
+
+    <!-- 删除子表 oce_bill -->
+    <delete id="deleteByPids" parameterType="java.util.List">
+        DELETE FROM oce_bill
+        WHERE pid IN
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 批量插入其它支出单核销详情 -->
+    <insert id="insertBatchtOceBill" parameterType="java.util.List" useGeneratedKeys="false">
+        INSERT INTO oce_bill (
+        id,
+        pid,
+        type,
+        source,
+        time,
+        money
+        )
+        VALUES
+        <foreach collection="list" item="oceBill" separator=",">
+            (
+            #{oceBill.id,jdbcType=VARCHAR},
+            #{oceBill.pid,jdbcType=VARCHAR},
+            #{oceBill.type,jdbcType=VARCHAR},
+            #{oceBill.source,jdbcType=VARCHAR},
+            #{oceBill.time,jdbcType=TIMESTAMP},
+            #{oceBill.money,jdbcType=DECIMAL}
+            )
+        </foreach>
+    </insert>
+
+
+
+</mapper>

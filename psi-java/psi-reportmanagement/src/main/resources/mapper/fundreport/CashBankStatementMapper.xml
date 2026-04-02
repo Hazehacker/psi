@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.fundreport.CashBankStatementMapper">
+
+    <select id="selectByQuery" resultType="com.zeroone.star.project.dto.j5.fundreport.CashBankStatementDTO">
+        SELECT
+            t.name,
+            t.type,
+            t.frame,
+            t.customer,
+            t.time,
+            t.number,
+            t.income,
+            t.expend,
+            t.balance,
+            t.user,
+            t.data
+        FROM (
+                 SELECT
+                     a.name AS name,
+                     '收款单' AS type,
+                     f.name AS frame,
+                     c.name AS customer,
+                     i.time AS time,
+                     i.number AS number,
+                     ii.money AS income,
+                     0 AS expend,
+                     a.balance AS balance,
+                     i.user AS user,
+                     ii.data AS data
+                 FROM imy i
+                          JOIN imy_info ii ON i.id = ii.pid
+                          JOIN account a ON ii.account = a.id
+                          JOIN customer c ON i.customer = c.id
+                          JOIN frame f ON i.frame = f.id
+                 WHERE 1 = 1
+                 <if test="query.customer != null and query.customer != ''">
+                    AND i.customer = #{query.customer}
+                 </if>
+
+                 UNION ALL
+
+                 SELECT
+                     a.name AS name,
+                     '付款单' AS type,
+                     f.name AS frame,
+                     s.name AS customer,
+                     o.time AS time,
+                     o.number AS number,
+                     0 AS income,
+                     oi.money AS expend,
+                     a.balance AS balance,
+                     o.user AS user,
+                     oi.data AS data
+                 FROM omy o
+                          JOIN omy_info oi ON o.id = oi.pid
+                          JOIN account a ON oi.account = a.id
+                          JOIN supplier s ON o.supplier = s.id
+                          JOIN frame f ON o.frame = f.id
+                 WHERE 1 = 1
+                <if test="query.supplier != null and query.supplier != ''">
+                    AND o.supplier = #{query.supplier}
+                </if>
+             ) AS t
+        WHERE 1=1
+        <if test="query.account != null and query.account != ''">
+            AND t.name = #{query.account}
+        </if>
+        <if test="query.startTime != null">
+            AND t.time >= #{query.startTime}
+        </if>
+        <if test="query.endTime != null">
+            AND t.time &lt;= #{query.endTime}
+        </if>
+        <if test="query.user != null and query.user != ''">
+            AND t.user = #{query.user}
+        </if>
+        ORDER BY t.time DESC
+    </select>
+
+    <select id="selectAllByQuery" resultType="com.zeroone.star.project.dto.j5.fundreport.CashBankStatementDTO">
+        SELECT
+        t.name,
+        t.type,
+        t.frame,
+        t.customer,
+        t.time,
+        t.number,
+        t.income,
+        t.expend,
+        t.balance,
+        t.user,
+        t.data
+        FROM (
+        SELECT
+        a.name AS name,
+        '收款单' AS type,
+        f.name AS frame,
+        c.name AS customer,
+        i.time AS time,
+        i.number AS number,
+        ii.money AS income,
+        0 AS expend,
+        a.balance AS balance,
+        i.user AS user,
+        ii.data AS data
+        FROM imy i
+        JOIN imy_info ii ON i.id = ii.pid
+        JOIN account a ON ii.account = a.id
+        JOIN customer c ON i.customer = c.id
+        JOIN frame f ON i.frame = f.id
+        WHERE 1 = 1
+        <if test="query.customer != null and query.customer != ''">
+            AND i.customer = #{query.customer}
+        </if>
+
+        UNION ALL
+
+        SELECT
+        a.name AS name,
+        '付款单' AS type,
+        f.name AS frame,
+        s.name AS customer,
+        o.time AS time,
+        o.number AS number,
+        0 AS income,
+        oi.money AS expend,
+        a.balance AS balance,
+        o.user AS user,
+        oi.data AS data
+        FROM omy o
+        JOIN omy_info oi ON o.id = oi.pid
+        JOIN account a ON oi.account = a.id
+        JOIN supplier s ON o.supplier = s.id
+        JOIN frame f ON o.frame = f.id
+        WHERE 1 = 1
+        <if test="query.supplier != null and query.supplier != ''">
+            AND o.supplier = #{query.supplier}
+        </if>
+        ) AS t
+        WHERE 1=1
+        <if test="query.account != null and query.account != ''">
+            AND t.name = #{query.account}
+        </if>
+        <if test="query.startTime != null">
+            AND t.time >= #{query.startTime}
+        </if>
+        <if test="query.endTime != null">
+            AND t.time &lt;= #{query.endTime}
+        </if>
+        <if test="query.user != null and query.user != ''">
+            AND t.user = #{query.user}
+        </if>
+        ORDER BY t.time DESC
+    </select>
+
+</mapper>

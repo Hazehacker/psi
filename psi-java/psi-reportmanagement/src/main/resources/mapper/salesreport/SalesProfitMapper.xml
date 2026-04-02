@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.salesreport.SalesProfitMapper">
+
+    <!-- 销售利润表ResultMap -->
+    <resultMap id="SalesProfitResultMap" type="com.zeroone.star.project.dto.j5.salesreport.SalesProfitDTO">
+        <!-- 基础信息字段 -->
+        <result column="type" property="type" jdbcType="VARCHAR"/>
+        <result column="frame" property="frame" jdbcType="VARCHAR"/>
+        <result column="customer" property="customer" jdbcType="VARCHAR"/>
+        <result column="time" property="time" jdbcType="VARCHAR"/>
+        <result column="number" property="number" jdbcType="VARCHAR"/>
+        <result column="data" property="data" jdbcType="VARCHAR"/>
+
+        <!-- 金额相关字段 -->
+        <result column="total" property="total" jdbcType="DECIMAL"/>
+        <result column="discount" property="discount" jdbcType="DECIMAL"/>
+        <result column="actual" property="actual" jdbcType="DECIMAL"/>
+
+        <!-- 成本利润字段 -->
+        <result column="buy" property="buy" jdbcType="DECIMAL"/>
+        <result column="gross_profit" property="grossProfit" jdbcType="DECIMAL"/>
+        <result column="gross_profit_margin" property="grossProfitMargin" jdbcType="DECIMAL"/>
+        <result column="cost" property="cost" jdbcType="DECIMAL"/>
+        <result column="net_profit" property="netProfit" jdbcType="DECIMAL"/>
+        <result column="net_profit_margin" property="netProfitMargin" jdbcType="DECIMAL"/>
+
+        <!-- 核销相关字段 -->
+        <result column="money" property="money" jdbcType="DECIMAL"/>
+        <result column="nucleus" property="nucleus" jdbcType="INTEGER"/>
+
+        <!-- 人员字段 -->
+        <result column="user" property="user" jdbcType="VARCHAR"/>
+        <result column="people" property="people" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 销售利润表详细ResultMap -->
+    <resultMap id="SalesProfitDetailedResultMap" type="com.zeroone.star.project.dto.j5.salesreport.SalesProfitDetailedDTO">
+        <!-- 基础信息字段 -->
+        <result column="type" property="type" jdbcType="VARCHAR"/>
+        <result column="frame" property="frame" jdbcType="VARCHAR"/>
+        <result column="customer" property="customer" jdbcType="VARCHAR"/>
+        <result column="time" property="time" jdbcType="VARCHAR"/>
+        <result column="number" property="number" jdbcType="VARCHAR"/>
+        <result column="data" property="data" jdbcType="VARCHAR"/>
+
+        <!-- 金额相关字段 -->
+        <result column="total" property="total" jdbcType="DECIMAL"/>
+        <result column="discount" property="discount" jdbcType="DECIMAL"/>
+        <result column="actual" property="actual" jdbcType="DECIMAL"/>
+
+        <!-- 成本利润字段 -->
+        <result column="buy" property="buy" jdbcType="DECIMAL"/>
+        <result column="gross_profit" property="grossProfit" jdbcType="DECIMAL"/>
+        <result column="gross_profit_margin" property="grossProfitMargin" jdbcType="DECIMAL"/>
+        <result column="cost" property="cost" jdbcType="DECIMAL"/>
+        <result column="net_profit" property="netProfit" jdbcType="DECIMAL"/>
+        <result column="net_profit_margin" property="netProfitMargin" jdbcType="DECIMAL"/>
+
+        <!-- 核销相关字段 -->
+        <result column="money" property="money" jdbcType="DECIMAL"/>
+        <result column="nucleus" property="nucleus" jdbcType="INTEGER"/>
+
+        <!-- 人员字段 -->
+        <result column="user" property="user" jdbcType="VARCHAR"/>
+        <result column="people" property="people" jdbcType="VARCHAR"/>
+
+        <!-- 商品明细列表 -->
+        <collection property="list" ofType="com.zeroone.star.project.dto.j5.salesreport.SalesProductDetail">
+            <result column="goods_name" property="goodsName" jdbcType="VARCHAR"/>
+            <result column="attr" property="attr" jdbcType="VARCHAR"/>
+            <result column="unit" property="unit" jdbcType="VARCHAR"/>
+            <result column="price" property="price" jdbcType="VARCHAR"/>
+            <result column="nums" property="nums" jdbcType="VARCHAR"/>
+            <result column="discount_info" property="discountInfo" jdbcType="DECIMAL"/>
+            <result column="total_info" property="totalInfo" jdbcType="DECIMAL"/>
+            <result column="tax" property="tax" jdbcType="DECIMAL"/>
+            <result column="tpt" property="tpt" jdbcType="DECIMAL"/>
+            <!-- 以下字段需要在SQL中补充 -->
+            <result column="goods_buy" property="buy" jdbcType="DECIMAL"/>
+            <result column="goods_gross_profit" property="grossProfit" jdbcType="DECIMAL"/>
+            <result column="goods_gross_profit_margin" property="grossProfitMargin" jdbcType="DECIMAL"/>
+        </collection>
+    </resultMap>
+
+
+
+    <!-- 销售利润查询 -->
+    <select id="selectSalesProfit" resultMap="SalesProfitResultMap">
+        SELECT
+        '销售单' as type,
+        f.name as frame,
+        c.name as customer,
+        DATE_FORMAT(s.time, '%Y-%m-%d') as time,
+        s.number as number,
+        s.total as total,
+        (s.total - s.actual) as discount,
+        s.actual as actual,
+        IFNULL(cost_sum.total_cost, 0) as buy,
+        (s.actual - IFNULL(cost_sum.total_cost, 0)) as gross_profit,
+        CASE
+        WHEN s.actual > 0 THEN ROUND(((s.actual - IFNULL(cost_sum.total_cost, 0)) / s.actual * 100), 2)
+        ELSE 0
+        END as gross_profit_margin,
+        IFNULL(cost_table.money, 0) as cost,  <!-- 修改：从cost表获取费用 -->
+        (s.actual - IFNULL(cost_sum.total_cost, 0) - IFNULL(cost_table.money, 0)) as net_profit,
+        CASE
+        WHEN s.actual > 0 THEN ROUND(((s.actual - IFNULL(cost_sum.total_cost, 0) - IFNULL(cost_table.money, 0)) / s.actual * 100), 2)
+        ELSE 0
+        END as net_profit_margin,
+        IFNULL(bill_sum.verification_money, 0) as money,
+        s.nucleus as nucleus,
+        u.name as user,
+        p.name as people,  <!-- 修改：返回人员名称 -->
+        s.data as data
+        FROM sell s
+        LEFT JOIN frame f ON s.frame = f.id
+        LEFT JOIN customer c ON s.customer = c.id
+        LEFT JOIN user u ON s.user = u.id
+        LEFT JOIN people p ON s.people = p.id  <!-- 新增：关联人员表 -->
+        LEFT JOIN (
+        SELECT
+        si.pid,
+        SUM(si.nums * g.buy) as total_cost
+        FROM sell_info si
+        JOIN goods g ON si.goods = g.id
+        GROUP BY si.pid
+        ) cost_sum ON s.id = cost_sum.pid
+        LEFT JOIN (
+        SELECT
+        pid,
+        SUM(money) as verification_money
+        FROM sell_bill
+        GROUP BY pid
+        ) bill_sum ON s.id = bill_sum.pid
+        LEFT JOIN (
+        SELECT
+        class,
+        SUM(money) as money
+        FROM cost
+        WHERE type = 'sell'  <!-- 根据实际情况调整类型 -->
+        GROUP BY class
+        ) cost_table ON s.id = cost_table.class  <!-- 新增：关联费用表 -->
+        WHERE s.examine = 1
+        <if test="query.customer != null and query.customer != ''">
+            AND s.customer = #{query.customer}
+        </if>
+        <if test="query.number != null and query.number != ''">
+            AND s.number LIKE CONCAT('%', #{query.number}, '%')
+        </if>
+        <if test="query.beginTime != null and query.beginTime != ''">
+            AND DATE(s.time) &gt;= #{query.beginTime}
+        </if>
+        <if test="query.leftTime != null and query.leftTime != ''">
+            AND DATE(s.time) &lt;= #{query.leftTime}
+        </if>
+        <if test="query.user != null and query.user != ''">
+            AND s.user = #{query.user}
+        </if>
+        <if test="query.people != null and query.people != ''">
+            AND s.people = #{query.people}
+        </if>
+        <if test="query.type != null and query.type != ''">
+            AND '销售单' = #{query.type}
+        </if>
+        ORDER BY s.time DESC
+    </select>
+
+    <!-- 销售利润详细查询 -->
+    <select id="listSalesDetailedProfit" resultMap="SalesProfitDetailedResultMap">
+        SELECT
+        '销售单' as type,
+        f.name as frame,
+        c.name as customer,
+        DATE_FORMAT(s.time, '%Y-%m-%d') as time,
+        s.number as number,
+        s.data as data,
+
+        <!-- 商品明细字段 -->
+        g.name as goods_name,
+        si.attr as attr,
+        si.unit as unit,
+        CAST(si.price AS CHAR) as price,
+        CAST(si.nums AS CHAR) as nums,
+        si.dsc as discount_info,
+        si.total as total_info,
+        si.tax as tax,
+        si.tpt as tpt,
+
+        <!-- 商品级别的成本利润计算 -->
+        (si.nums * g.buy) as goods_buy,
+        (si.total - (si.nums * g.buy)) as goods_gross_profit,
+        CASE
+        WHEN si.total > 0 THEN ROUND(((si.total - (si.nums * g.buy)) / si.total * 100), 2)
+        ELSE 0
+        END as goods_gross_profit_margin,
+
+        <!-- 单据金额字段 -->
+        s.total as total,
+        (s.total - s.actual) as discount,
+        s.actual as actual,
+
+        <!-- 单据级别的成本利润字段 -->
+        IFNULL(cost_sum.total_cost, 0) as buy,
+        (s.actual - IFNULL(cost_sum.total_cost, 0)) as gross_profit,
+        CASE
+        WHEN s.actual > 0 THEN ROUND(((s.actual - IFNULL(cost_sum.total_cost, 0)) / s.actual * 100), 2)
+        ELSE 0
+        END as gross_profit_margin,
+        IFNULL(cost_table.money, 0) as cost,
+        (s.actual - IFNULL(cost_sum.total_cost, 0) - IFNULL(cost_table.money, 0)) as net_profit,
+        CASE
+        WHEN s.actual > 0 THEN ROUND(((s.actual - IFNULL(cost_sum.total_cost, 0) - IFNULL(cost_table.money, 0)) / s.actual * 100), 2)
+        ELSE 0
+        END as net_profit_margin,
+
+        <!-- 核销相关字段 -->
+        IFNULL(bill_sum.verification_money, 0) as money,
+        s.nucleus as nucleus,
+
+        <!-- 人员字段 -->
+        u.name as user,
+        p.name as people
+
+        FROM sell s
+        INNER JOIN sell_info si ON s.id = si.pid
+        INNER JOIN goods g ON si.goods = g.id
+        LEFT JOIN frame f ON s.frame = f.id
+        LEFT JOIN customer c ON s.customer = c.id
+        LEFT JOIN user u ON s.user = u.id
+        LEFT JOIN people p ON s.people = p.id
+        LEFT JOIN (
+        SELECT
+        si.pid,
+        SUM(si.nums * g.buy) as total_cost
+        FROM sell_info si
+        JOIN goods g ON si.goods = g.id
+        GROUP BY si.pid
+        ) cost_sum ON s.id = cost_sum.pid
+        LEFT JOIN (
+        SELECT
+        pid,
+        SUM(money) as verification_money
+        FROM sell_bill
+        GROUP BY pid
+        ) bill_sum ON s.id = bill_sum.pid
+        LEFT JOIN (
+        SELECT
+        class,
+        SUM(money) as money
+        FROM cost
+        WHERE type = 'sell'
+        GROUP BY class
+        ) cost_table ON s.id = cost_table.class
+        WHERE s.examine = 1
+        <if test="query.customer != null and query.customer != ''">
+            AND s.customer = #{query.customer}
+        </if>
+        <if test="query.number != null and query.number != ''">
+            AND s.number LIKE CONCAT('%', #{query.number}, '%')
+        </if>
+        <if test="query.beginTime != null and query.beginTime != ''">
+            AND DATE(s.time) &gt;= #{query.beginTime}
+        </if>
+        <if test="query.leftTime != null and query.leftTime != ''">
+            AND DATE(s.time) &lt;= #{query.leftTime}
+        </if>
+        <if test="query.user != null and query.user != ''">
+            AND s.user = #{query.user}
+        </if>
+        <if test="query.people != null and query.people != ''">
+            AND s.people = #{query.people}
+        </if>
+        <if test="query.type != null and query.type != ''">
+            AND '销售单' = #{query.type}
+        </if>
+        ORDER BY s.time DESC, s.number, g.name
+    </select>
+
+
+
+
+
+
+</mapper>

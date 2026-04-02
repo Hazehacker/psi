@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.finance.mapper.otherincome.IceMapper">
+
+    <select id="selectIncomeExpendTypeByIds" resultType="com.zeroone.star.finance.entity.Iet">
+        SELECT id, name, type, sort, data FROM iet
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+    <select id = "selectIncomeExpendTypeById" resultType="com.zeroone.star.finance.entity.Iet">
+        SELECT id ,name ,type,sort,data
+        FROM
+            iet i
+        <where>
+            i.id = #{iet}
+        </where>
+    </select>
+    <resultMap id="OtherIncomeInfoResultMap" type="com.zeroone.star.finance.entity.IceInfo">
+        <id property="id" column="id"/>
+        <result property="pid" column="pid"/>
+        <result property="iet" column="iet"/>
+        <result property="money" column="money"/>
+        <result property="data" column="data"/>
+        <association
+            property="ietData"
+            javaType="com.zeroone.star.finance.entity.Iet"
+            select="selectIncomeExpendTypeById"
+            column="iet">
+        </association>
+
+    </resultMap>
+    <select id="selectOtherIncomeInfoById" resultMap="OtherIncomeInfoResultMap">
+        SELECT
+        id,pid,iet,money,data
+        FROM
+        ice_info ii
+        <where>
+            ii.pid = #{id}
+        </where>
+    </select>
+    <select id="selectOtherIncomeBillById" resultType="com.zeroone.star.finance.entity.IceBill">
+        SELECT
+            id, pid, type, source, time, money
+        FROM
+            ice_bill ib
+        <where>
+            ib.pid = #{id}
+        </where>
+    </select>
+
+    <resultMap id="IncomeDetailResultMap" type="com.zeroone.star.finance.entity.Ice">
+        <!-- (1) 主对象 Ice 的字段映射 -->
+        <id property="id" column="id"/>
+        <result property="frame" column="frame"/>
+        <result property="customer" column="customer"/>
+        <result property="time" column="time"/>
+        <result property="number" column="number"/>
+        <result property="total" column="total"/>
+        <result property="actual" column="actual"/>
+        <result property="money" column="money"/>
+<!--        <result property="writeOffAmount" column="writeOffAmount"/>-->
+        <result property="account" column="account"/>
+        <result property="people" column="people"/>
+        <result property="file" column="file"/>
+        <result property="data" column="data"/>
+        <result property="more" column="more"/>
+        <result property="examine" column="examine"/>
+        <result property="nucleus" column="nucleus"/>
+        <result property="user" column="user"/>
+
+        <!-- (2) 关联 "核销单列表" (一对多) -->
+        <collection property="iceBills"
+                    ofType="com.zeroone.star.finance.entity.IceBill"
+                    select="selectOtherIncomeBillById"
+                    column="id">
+        </collection>
+
+        <!-- (3) 关联 "明细信息列表" (一对多) -->
+        <collection property="iceInfos"
+                    ofType="com.zeroone.star.finance.entity.IceInfo"
+                    select="selectOtherIncomeInfoById"
+                    column="id">
+        </collection>
+    </resultMap>
+    <select id="selectOtherIncomeById" resultMap="IncomeDetailResultMap">
+        SELECT
+        i.id,
+        f.name AS frame,
+        c.name AS customer,
+        i.`time`,
+        i.number,
+        i.total,
+        i.actual,
+        i.money,
+        -- COALESCE(ib.billed_sum, 0.00) AS writeOffAmount,
+        a.name AS account,
+        p.name AS people,
+        i.`file`,
+        i.data,
+        i.more,
+        i.examine,
+        i.nucleus,
+        u.name AS `user`
+        FROM
+        ice i
+        LEFT JOIN frame f ON i.frame = f.id
+        LEFT JOIN customer c ON i.customer = c.id
+        LEFT JOIN account a ON i.account = a.id
+        LEFT JOIN people p ON i.people = p.id
+        LEFT JOIN user u ON i.user = u.id
+        -- LEFT JOIN ( SELECT pid, SUM(money) AS billed_sum FROM ice_bill GROUP BY pid) AS ib ON i.id = ib.pid
+        <where>
+            i.id = #{id}
+        </where>
+
+    </select>
+    <select id="selectOtherIncomePage" resultType="com.zeroone.star.finance.entity.Ice">
+        SELECT
+        i.id,
+        f.name AS frame,
+        c.name AS customer,
+        i.`time`,
+        i.number,
+        i.total,
+        i.actual,
+        i.money,
+        COALESCE(ib.billed_sum, 0.00) AS writeOffAmount,
+        a.name AS account,
+        p.name AS people,
+        i.`file`,
+        i.data,
+        i.more,
+        i.examine,
+        i.nucleus,
+        u.name AS `user`
+        FROM
+        ice i
+        LEFT JOIN frame f ON i.frame = f.id
+        LEFT JOIN customer c ON i.customer = c.id
+        LEFT JOIN account a ON i.account = a.id
+        LEFT JOIN people p ON i.people = p.id
+        LEFT JOIN user u ON i.user = u.id
+        LEFT JOIN (SELECT pid, SUM(money) AS billed_sum
+        FROM ice_bill
+        GROUP BY pid) AS ib ON i.id = ib.pid
+        <where>
+            <!-- id (模糊查询id) -->
+            <if test="query.id != null and query.id != ''">
+                AND i.id LIKE CONCAT('%', #{query.id}, '%')
+            </if>
+            <!-- 组织 (模糊查询组织) -->
+            <if test="query.frame != null and query.frame != ''">
+                AND i.frame LIKE CONCAT('%', #{query.frame}, '%')
+            </if>
+            <!-- 客户 (模糊查询客户名称) -->
+            <if test="query.customer != null and query.customer != ''">
+                AND i.customer LIKE CONCAT('%', #{query.customer}, '%')
+            </if>
+            <!-- 单据编号 (模糊查询) -->
+            <if test="query.number != null and query.number != ''">
+                AND i.number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <!-- 查询起始时间 (大于等于) -->
+            <if test="query.startDate != null">
+                AND i.`time` >= #{query.startDate}
+            </if>
+            <!-- 查询截止时间 (小于等于) -->
+            <if test="query.endDate != null">
+                AND i.`time` &lt;= #{query.endDate}
+            </if>
+            <!-- 结算/资金账户 (模糊查询账户名称) -->
+            <if test="query.account != null and query.account != ''">
+                AND i.account LIKE CONCAT('%', #{query.account}, '%')
+            </if>
+            <!-- 关联人员 (模糊查询人员名称) -->
+            <if test="query.people != null and query.people != ''">
+                AND i.people LIKE CONCAT('%', #{query.people}, '%')
+            </if>
+            <!-- 制单人 (模糊查询人员名称) -->
+            <if test="query.user != null and query.user != ''">
+                AND i.user LIKE CONCAT('%', #{query.user}, '%')
+            </if>
+            <!-- 审核状态 (精确匹配) -->
+            <if test="query.examine != null">
+                AND i.examine = #{query.examine}
+            </if>
+            <!-- 核销状态 (精确匹配) -->
+            <if test="query.nucleus != null">
+                AND i.nucleus = #{query.nucleus}
+            </if>
+            <!-- 备注信息 (模糊查询) -->
+            <if test="query.data != null and query.data != ''">
+                AND i.data LIKE CONCAT('%', #{query.data}, '%')
+            </if>
+        </where>
+        <!-- 默认按单据时间倒序排列 -->
+        ORDER BY i.`time` DESC
+    </select>
+
+    <insert id="insertIce" parameterType="com.zeroone.star.finance.entity.Ice">
+        INSERT INTO zo_psi.ice (id, frame, customer, `time`, `number`, total, actual, money, account, people, `file`, `data`, more, examine, nucleus, `user`)
+        VALUES
+            (#{id}, #{frame}, #{customer}, #{time}, #{number}, #{total}, #{actual}, #{money}, #{account}, #{people}, #{file}, #{data}, #{more}, #{examine}, #{nucleus}, #{user})
+    </insert>
+    <insert id="batchBillInsert">
+        INSERT INTO zo_psi.ice_bill (id, pid, `type`, source, `time`, money)
+        VALUES
+        <foreach collection="billList" item="bill" separator=",">
+            (#{bill.id}, #{bill.pid}, #{bill.type}, #{bill.source}, #{bill.time}, #{bill.money})
+        </foreach>
+    </insert>
+    <insert id="batchInfoInsert">
+        INSERT INTO ice_info (id, pid, iet, money, `data`)
+        VALUES
+        <foreach collection="infoList" item="info" separator=",">
+            (#{info.id}, #{info.pid}, #{info.iet}, #{info.money}, #{info.data})
+        </foreach>
+    </insert>
+
+
+
+</mapper>

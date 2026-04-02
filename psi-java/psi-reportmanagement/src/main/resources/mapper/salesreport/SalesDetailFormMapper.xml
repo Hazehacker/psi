@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.salesreport.SalesDetailFormMapper">
+
+    <!-- 分页查询 -->
+    <select id="selectSalesDetailForm"
+            resultType="com.zeroone.star.project.dto.j5.salesreport.SalesDetailFormDTO">
+        SELECT t.attr as attr,
+        t.data as data,
+        t.dsc as dsc,
+        t.nums as nums,
+        t.price as price,
+        t.tat as tat,
+        t.total as total,
+        t.tpt as tpt,
+        t.unit as unit,
+        t.warehouse as warehouse,
+        t.name as name,
+        t.customer as customer,
+        t.time as time,
+        t.number as number,
+        t.type as type
+        FROM (
+        -- 1. 销售出库（type = 1）
+        SELECT
+        sori.attr, sori.data, sori.dsc, sori.nums, sori.price, sori.tat,
+        sori.total, sori.tpt, sori.unit, sori.warehouse,
+        g.name AS name,
+        sor.customer, sor.time, sor.number,
+        1 AS type
+        FROM sor_info sori
+        LEFT JOIN goods g ON sori.goods = g.id
+        LEFT JOIN sor ON sori.pid = sor.id
+        <where>
+            <if test="query.startTime != null">
+                AND sor.time <![CDATA[ >= ]]> #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND sor.time <![CDATA[ <= ]]> #{query.endTime}
+            </if>
+            <if test="query.customer != null and query.customer != ''">
+                AND sor.customer = #{query.customer}
+            </if>
+            <if test="query.number != null and query.number != ''">
+                AND sor.number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.warehouse != null and query.warehouse != ''">
+                AND sori.warehouse = #{query.warehouse}
+            </if>
+            <if test="query.name != null and query.name != ''">
+                AND g.name LIKE CONCAT('%', #{query.name}, '%')
+            </if>
+            <if test="query.data != null and query.data != ''">
+                AND sori.data LIKE CONCAT('%', #{query.data}, '%')
+            </if>
+        </where>
+
+        UNION ALL
+
+        -- 2. 销售退货（type = 0）
+        SELECT
+        srei.attr, srei.data, srei.dsc, srei.nums, srei.price, srei.tat,
+        srei.total, srei.tpt, srei.unit, srei.warehouse,
+        g.name AS name,
+        sre.customer, sre.time, sre.number,
+        0 AS type
+        FROM sre_info srei
+        LEFT JOIN goods g ON srei.goods = g.id
+        LEFT JOIN sre ON srei.pid = sre.id
+        <where>
+            <if test="query.startTime != null">
+                AND sre.time <![CDATA[ >= ]]> #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND sre.time <![CDATA[ <= ]]> #{query.endTime}
+            </if>
+            <if test="query.customer != null and query.customer != ''">
+                AND sre.customer = #{query.customer}
+            </if>
+            <if test="query.number != null and query.number != ''">
+                AND sre.number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.warehouse != null and query.warehouse != ''">
+                AND srei.warehouse = #{query.warehouse}
+            </if>
+            <if test="query.name != null and query.name != ''">
+                AND g.name LIKE CONCAT('%', #{query.name}, '%')
+            </if>
+            <if test="query.data != null and query.data != ''">
+                AND srei.data LIKE CONCAT('%', #{query.data}, '%')
+            </if>
+        </where>
+        ) t
+        <where>
+            <if test="query.type != null">
+                AND t.type = #{query.type}
+            </if>
+        </where>
+        ORDER BY t.time DESC
+    </select>
+
+
+    <!-- Excel 导出查询 -->
+    <select id="selectAllForExcel"
+            resultType="com.zeroone.star.project.dto.j5.salesreport.SalesDetailFormDTO">
+        SELECT t.attr as attr,
+        t.data as data,
+        t.dsc as dsc,
+        t.nums as nums,
+        t.price as price,
+        t.tat as tat,
+        t.total as total,
+        t.tpt as tpt,
+        t.unit as unit,
+        t.warehouse as warehouse,
+        t.name as name,
+        t.customer as customer,
+        t.time as time,
+        t.number as number,
+        t.type as type
+        FROM (
+        -- 1. 销售出库（type = 1）
+        SELECT
+        sori.attr, sori.data, sori.dsc, sori.nums, sori.price, sori.tat,
+        sori.total, sori.tpt, sori.unit, sori.warehouse,
+        g.name AS name,
+        sor.customer, sor.time, sor.number,
+        1 AS type
+        FROM sor_info sori
+        LEFT JOIN goods g ON sori.goods = g.id
+        LEFT JOIN sor ON sori.pid = sor.id
+        <where>
+            <if test="query.startTime != null">
+                AND sor.time <![CDATA[ >= ]]> #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND sor.time <![CDATA[ <= ]]> #{query.endTime}
+            </if>
+            <if test="query.customer != null and query.customer != ''">
+                AND sor.customer = #{query.customer}
+            </if>
+            <if test="query.number != null and query.number != ''">
+                AND sor.number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.warehouse != null and query.warehouse != ''">
+                AND sori.warehouse = #{query.warehouse}
+            </if>
+            <if test="query.name != null and query.name != ''">
+                AND g.name LIKE CONCAT('%', #{query.name}, '%')
+            </if>
+            <if test="query.data != null and query.data != ''">
+                AND sori.data LIKE CONCAT('%', #{query.data}, '%')
+            </if>
+        </where>
+
+        UNION ALL
+
+        -- 2. 销售退货（type = 0）
+        SELECT
+        srei.attr, srei.data, srei.dsc, srei.nums, srei.price, srei.tat,
+        srei.total, srei.tpt, srei.unit, srei.warehouse,
+        g.name AS name,
+        sre.customer, sre.time, sre.number,
+        0 AS type
+        FROM sre_info srei
+        LEFT JOIN goods g ON srei.goods = g.id
+        LEFT JOIN sre ON srei.pid = sre.id
+        <where>
+            <if test="query.startTime != null">
+                AND sre.time <![CDATA[ >= ]]> #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND sre.time <![CDATA[ <= ]]> #{query.endTime}
+            </if>
+            <if test="query.customer != null and query.customer != ''">
+                AND sre.customer = #{query.customer}
+            </if>
+            <if test="query.number != null and query.number != ''">
+                AND sre.number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.warehouse != null and query.warehouse != ''">
+                AND srei.warehouse = #{query.warehouse}
+            </if>
+            <if test="query.name != null and query.name != ''">
+                AND g.name LIKE CONCAT('%', #{query.name}, '%')
+            </if>
+            <if test="query.data != null and query.data != ''">
+                AND srei.data LIKE CONCAT('%', #{query.data}, '%')
+            </if>
+        </where>
+        ) t
+        <where>
+            <if test="query.type != null">
+                AND t.type = #{query.type}
+            </if>
+        </where>
+        ORDER BY t.time DESC
+    </select>
+
+</mapper>

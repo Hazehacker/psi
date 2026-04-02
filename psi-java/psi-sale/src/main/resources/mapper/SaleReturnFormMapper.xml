@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.sale.mapper.SaleReturnMapper">
+    <insert id="insertBatch">
+        INSERT INTO sre_info (
+        goods,
+        attr,
+        unit,
+        warehouse,
+        batch,
+        mfd,
+        price,
+        nums,
+        serial,
+        discount,
+        dsc,
+        total,
+        tax,
+        tat,
+        tpt,
+        data
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.goods},
+            #{item.attr},
+            #{item.unit},
+            #{item.warehouse},
+            #{item.batch},
+            #{item.mfd},
+            #{item.price},
+            #{item.nums},
+            #{item.serial},
+            #{item.discount},
+            #{item.dsc},
+            #{item.total},
+            #{item.tax},
+            #{item.tat},
+            #{item.tpt},
+            #{item.data}
+            )
+        </foreach>
+    </insert>
+    <select id="selectSaleReturnPage" resultType="com.zeroone.star.project.dto.j4.sale.SaleReturnDTO">
+        select id, source, frame, customer, time, number, total , actual , money , cost , account , people , logistics, file, data, more, examine, nucleus, cse, invoice, `check`, user
+        from sre
+        <if test="query != null and query.goods != null">
+            left join
+            (
+                select pid from sre_info where goods like CONCAT('%', #{query.goods}, '%')
+            ) as p
+            on p.pid = sre.id
+        </if>
+        <where>
+            <if test="query != null and query.id != null">
+                and id = #{query.id}
+            </if>
+            <if test="query != null and query.customer != null">
+                and customer = #{query.customer}
+            </if>
+            <if test="query != null and query.people != null">
+                and people = #{query.people}
+            </if>
+            <if test="query != null and query.begin != null">
+                and time >= #{query.begin}
+            </if>
+            <if test="query != null  and query.end != null">
+                and #{query.end} >= time
+            </if>
+            <if test="query != null and query.user != null">
+                and user = #{query.user}
+            </if>
+            <if test="query != null and query.examine != null">
+                and examine = #{query.examine}
+            </if>
+            <if test="query != null and query.nucleus != null">
+                and nucleus = #{query.nucleus}
+            </if>
+            <if test="query != null and query.cse != null">
+                and cse = #{query.cse}
+            </if>
+            <if test="query != null and query.invoice != null">
+                and invoice = #{query.invoice}
+            </if>
+            <if test="query != null and query.check != null">
+                and `check` = #{query.check}
+            </if>
+            <if test="query != null and query.data != null">
+                and data = #{query.data}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectSaleReturnByPage" resultType="com.zeroone.star.sale.entity.SaleReturnInfo">
+        select
+            id,
+            pid,
+            goods,
+            attr,
+            unit,
+            warehouse,
+            batch,
+            mfd,
+            price,
+            nums,
+            serial,
+            discount,
+            dsc,
+            total,
+            tax,
+            tat,
+            tpt,
+            data
+        from sre_info
+        order by id
+        limit #{start},#{batchSize}
+    </select>
+
+
+</mapper>

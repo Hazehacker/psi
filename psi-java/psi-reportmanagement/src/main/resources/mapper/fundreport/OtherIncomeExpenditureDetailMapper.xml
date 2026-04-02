@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.fundreport.OtherIncomeExpenditureDetailMapper">
+
+    <select id="selectOtherIncomeExpenditureDetail"
+            resultType="com.zeroone.star.project.dto.j5.fundreport.OtherIncomeExpenditureDetailDTO">
+        -- 其他收入单
+        SELECT
+        '其它收入单' AS documentType,
+        f.name AS frame,
+        COALESCE(c.name, '') AS counterparty,
+        DATE_FORMAT(ice.time, '%Y-%m-%d') AS dateTime,
+        ice.number AS documentNumber,
+        COALESCE(iet.name, '') AS category,
+        ice.total AS income,
+        0 AS expenditure,
+        a.name AS settlementAccount,
+        COALESCE(ice.data, '') AS remark
+        FROM ice
+        LEFT JOIN frame f ON ice.frame = f.id
+        LEFT JOIN customer c ON ice.customer = c.id
+        LEFT JOIN account a ON ice.account = a.id
+        LEFT JOIN ice_info ii ON ice.id = ii.pid
+        LEFT JOIN iet ON ii.iet = iet.id
+        <where>
+            <if test="query.startTime != null and query.startTime != ''">
+                AND DATE(ice.time) >= #{query.startTime}
+            </if>
+
+            <if test="query.endTime != null and query.endTime != ''">
+                AND DATE(ice.time) &lt;= #{query.endTime}
+            </if>
+
+            <if test="query.documentType != null and query.documentType != ''">
+                AND '其它收入单' LIKE CONCAT('%', #{query.documentType}, '%')
+            </if>
+
+            <if test="query.documentNumber != null and query.documentNumber != ''">
+                AND ice.number LIKE CONCAT('%', #{query.documentNumber}, '%')
+            </if>
+
+            <if test="query.category != null and query.category != ''">
+                AND iet.name LIKE CONCAT('%', #{query.category}, '%')
+            </if>
+
+            <if test="query.settlementAccount != null and query.settlementAccount != ''">
+                AND a.name LIKE CONCAT('%', #{query.settlementAccount}, '%')
+            </if>
+
+            <if test="query.remark != null and query.remark != ''">
+                AND ice.data LIKE CONCAT('%', #{query.remark}, '%')
+            </if>
+        </where>
+
+        UNION ALL
+
+        -- 其他支出单
+        SELECT
+        '其它支出单' AS documentType,
+        f.name AS frame,
+        COALESCE(s.name, '') AS counterparty,
+        DATE_FORMAT(oce.time, '%Y-%m-%d') AS dateTime,
+        oce.number AS documentNumber,
+        COALESCE(iet.name, '') AS category,
+        0 AS income,
+        oce.total AS expenditure,
+        a.name AS settlementAccount,
+        COALESCE(oce.data, '') AS remark
+        FROM oce
+        LEFT JOIN frame f ON oce.frame = f.id
+        LEFT JOIN supplier s ON oce.supplier = s.id
+        LEFT JOIN account a ON oce.account = a.id
+        LEFT JOIN oce_info oi ON oce.id = oi.pid
+        LEFT JOIN iet ON oi.iet = iet.id
+        <where>
+            <if test="query.startTime != null and query.startTime != ''">
+                AND DATE(oce.time) >= #{query.startTime}
+            </if>
+
+            <if test="query.endTime != null and query.endTime != ''">
+                AND DATE(oce.time) &lt;= #{query.endTime}
+            </if>
+
+            <if test="query.documentType != null and query.documentType != ''">
+                AND '其它支出单' LIKE CONCAT('%', #{query.documentType}, '%')
+            </if>
+
+            <if test="query.documentNumber != null and query.documentNumber != ''">
+                AND oce.number LIKE CONCAT('%', #{query.documentNumber}, '%')
+            </if>
+
+            <if test="query.category != null and query.category != ''">
+                AND iet.name LIKE CONCAT('%', #{query.category}, '%')
+            </if>
+
+            <if test="query.settlementAccount != null and query.settlementAccount != ''">
+                AND a.name LIKE CONCAT('%', #{query.settlementAccount}, '%')
+            </if>
+
+            <if test="query.remark != null and query.remark != ''">
+                AND oce.data LIKE CONCAT('%', #{query.remark}, '%')
+            </if>
+        </where>
+
+        ORDER BY dateTime DESC
+    </select>
+
+    <select id="selectAllForExport"
+            resultType="com.zeroone.star.project.dto.j5.fundreport.OtherIncomeExpenditureDetailDTO">
+        -- 其他收入单
+        SELECT
+        '其它收入单' AS documentType,
+        f.name AS frame,
+        COALESCE(c.name, '') AS counterparty,
+        DATE_FORMAT(ice.time, '%Y-%m-%d') AS dateTime,
+        ice.number AS documentNumber,
+        COALESCE(iet.name, '') AS category,
+        ice.total AS income,
+        0 AS expenditure,
+        a.name AS settlementAccount,
+        COALESCE(ice.data, '') AS remark
+        FROM ice
+        LEFT JOIN frame f ON ice.frame = f.id
+        LEFT JOIN customer c ON ice.customer = c.id
+        LEFT JOIN account a ON ice.account = a.id
+        LEFT JOIN ice_info ii ON ice.id = ii.pid
+        LEFT JOIN iet ON ii.iet = iet.id
+        <where>
+            <if test="query.startTime != null and query.startTime != ''">
+                AND DATE(ice.time) >= #{query.startTime}
+            </if>
+
+            <if test="query.endTime != null and query.endTime != ''">
+                AND DATE(ice.time) &lt;= #{query.endTime}
+            </if>
+
+            <if test="query.documentType != null and query.documentType != ''">
+                AND '其它收入单' LIKE CONCAT('%', #{query.documentType}, '%')
+            </if>
+
+            <if test="query.documentNumber != null and query.documentNumber != ''">
+                AND ice.number LIKE CONCAT('%', #{query.documentNumber}, '%')
+            </if>
+
+            <if test="query.category != null and query.category != ''">
+                AND iet.name LIKE CONCAT('%', #{query.category}, '%')
+            </if>
+
+            <if test="query.settlementAccount != null and query.settlementAccount != ''">
+                AND a.name LIKE CONCAT('%', #{query.settlementAccount}, '%')
+            </if>
+
+            <if test="query.remark != null and query.remark != ''">
+                AND ice.data LIKE CONCAT('%', #{query.remark}, '%')
+            </if>
+        </where>
+
+        UNION ALL
+
+        -- 其他支出单
+        SELECT
+        '其它支出单' AS documentType,
+        f.name AS frame,
+        COALESCE(s.name, '') AS counterparty,
+        DATE_FORMAT(oce.time, '%Y-%m-%d') AS dateTime,
+        oce.number AS documentNumber,
+        COALESCE(iet.name, '') AS category,
+        0 AS income,
+        oce.total AS expenditure,
+        a.name AS settlementAccount,
+        COALESCE(oce.data, '') AS remark
+        FROM oce
+        LEFT JOIN frame f ON oce.frame = f.id
+        LEFT JOIN supplier s ON oce.supplier = s.id
+        LEFT JOIN account a ON oce.account = a.id
+        LEFT JOIN oce_info oi ON oce.id = oi.pid
+        LEFT JOIN iet ON oi.iet = iet.id
+        <where>
+            <if test="query.startTime != null and query.startTime != ''">
+                AND DATE(oce.time) >= #{query.startTime}
+            </if>
+
+            <if test="query.endTime != null and query.endTime != ''">
+                AND DATE(oce.time) &lt;= #{query.endTime}
+            </if>
+
+            <if test="query.documentType != null and query.documentType != ''">
+                AND '其它支出单' LIKE CONCAT('%', #{query.documentType}, '%')
+            </if>
+
+            <if test="query.documentNumber != null and query.documentNumber != ''">
+                AND oce.number LIKE CONCAT('%', #{query.documentNumber}, '%')
+            </if>
+
+            <if test="query.category != null and query.category != ''">
+                AND iet.name LIKE CONCAT('%', #{query.category}, '%')
+            </if>
+
+            <if test="query.settlementAccount != null and query.settlementAccount != ''">
+                AND a.name LIKE CONCAT('%', #{query.settlementAccount}, '%')
+            </if>
+
+            <if test="query.remark != null and query.remark != ''">
+                AND oce.data LIKE CONCAT('%', #{query.remark}, '%')
+            </if>
+        </where>
+
+        ORDER BY dateTime DESC
+    </select>
+
+</mapper>

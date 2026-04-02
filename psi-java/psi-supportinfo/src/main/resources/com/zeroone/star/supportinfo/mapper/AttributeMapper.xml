@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.supportinfo.mapper.AttributeMapper">
+    <insert id="insertBatchAttributeInfo" useGeneratedKeys="false">
+        INSERT INTO attribute_info (id, pid, name) VALUES
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.id}, #{item.pid}, #{item.name})
+        </foreach>
+    </insert>
+</mapper>

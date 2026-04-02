@@ -1,0 +1,33 @@
+package com.zeroone.star.project.vo.j8.finance;
+
+import io.swagger.annotations.ApiModelProperty;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+public class TradeInvoiceVO {
+    @ApiModelProperty(value = "发票ID", example = "invoice1")
+    private String id;
+    @ApiModelProperty(value = "单据类型", example = "0")
+    private String type;
+    @ApiModelProperty(value = "所属组织", example = "0")
+    private String frame;
+
+    @ApiModelProperty(value = "单据时间", example = "2025-10-20 15:23:00")
+    private LocalDateTime time;
+    @ApiModelProperty(value = "单据编号", example = "QTZCD2510201810404")
+    private String number;
+    @ApiModelProperty(value = "开票状态", example = "1")
+    private String invoiceStatus;//存疑
+    @ApiModelProperty(value = "单据金额", example = "12345.67")
+    private BigDecimal total;
+    @ApiModelProperty(value = "已开票金额", example = "12345.67")
+    private BigDecimal invoicedCount;
+    @ApiModelProperty(value = "未开票金额", example = "0.00")
+    private BigDecimal disinvoicedCount;
+    @ApiModelProperty(value = "开票金额", example = "0.00")
+    private BigDecimal invoiceTotal;
+
+
+
+}

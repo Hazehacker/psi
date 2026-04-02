@@ -1,0 +1,12 @@
+server:
+  port: ${sp.paymentorder}
+spring:
+  application:
+    name: ${sn.paymentorder}
+datasource:
+  url: jdbc:mysql://121.40.149.36:3306/zo_psi?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+  username: root
+  password: rE#-pmdQ;5.*
+  driver-class-name: com.mysql.cj.jdbc.Driver
+
+

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.procurementreport.PurchaseOrderSummaryFormMapper">
+
+    <resultMap id="PurchaseOrderSummaryMap" type="com.zeroone.star.project.dto.j5.procurementreport.PurchaseOrderSummaryFormDTO">
+
+        <!-- 动态维度字段 -->
+        <result column="supplier" property="supplier"/>
+        <result column="user" property="user"/>
+        <result column="people" property="people"/>
+        <!-- 基础字段 -->
+        <result column="goodsName" property="goods"/>
+        <result column="attr" property="attr"/>
+        <result column="warehouse" property="warehouse"/>
+        <result column="unit" property="unit"/>
+
+        <!-- 采购单信息 buy -->
+        <association property="buy"
+                     javaType="com.zeroone.star.project.dto.j5.procurementreport.PurchaseOrderSummaryFormDTO$OrderInfo">
+            <result column="purchase_price" property="price"/>
+            <result column="purchase_quantity" property="nums"/>
+            <result column="purchase_amount" property="money"/>
+        </association>
+
+        <!-- 采购退货单信息 bor -->
+        <association property="bor"
+                     javaType="com.zeroone.star.project.dto.j5.procurementreport.PurchaseOrderSummaryFormDTO$OrderInfo">
+            <result column="return_price" property="price"/>
+            <result column="return_quantity" property="nums"/>
+            <result column="return_amount" property="money"/>
+        </association>
+
+        <!-- 汇总信息 summary -->
+        <association property="summary"
+                     javaType="com.zeroone.star.project.dto.j5.procurementreport.PurchaseOrderSummaryFormDTO$Summary">
+            <result column="summary_quantity" property="nums"/>
+            <result column="summary_amount" property="money"/>
+        </association>
+
+    </resultMap>
+
+
+    <!-- ====================== 主查询 SQL ====================== -->
+    <select id="listPurchaseSummary"
+            parameterType="com.zeroone.star.project.query.j5.procurementreport.PurchaseOrderSummaryFormQuery"
+            resultMap="PurchaseOrderSummaryMap">
+
+        SELECT
+        <choose>
+            <when test="query.summaryType == 'supplier'">
+                bo.supplier AS supplier,
+            </when>
+            <when test="query.summaryType == 'people'">
+                bo.people AS people,
+            </when>
+            <when test="query.summaryType == 'user'">
+                bo.user AS user,
+            </when>
+            <otherwise>
+                NULL AS supplier,
+                NULL AS user,
+                NULL AS people,
+            </otherwise>
+        </choose>
+
+        -- 基础字段
+        bu.goods AS goodsName,
+        bu.attr AS attr,
+        bu.warehouse AS warehouse,
+        bu.unit AS unit,
+
+        -- 采购单信息
+        IFNULL(ROUND(AVG(bu.price), 4), 0) AS purchase_price,
+        SUM(bu.nums) AS purchase_quantity,
+        SUM(bu.total) AS purchase_amount,
+
+        -- 采购退货单信息
+        IFNULL(ROUND(AVG(br.price), 4), 0) AS return_price,
+        IFNULL(SUM(br.nums), 0) AS return_quantity,
+        IFNULL(SUM(br.total), 0) AS return_amount,
+
+        -- 汇总信息
+        (SUM(bu.nums) - IFNULL(SUM(br.nums), 0)) AS summary_quantity,
+        (SUM(bu.total) - IFNULL(SUM(br.total), 0)) AS summary_amount
+
+        FROM buy_info bu
+        LEFT JOIN bor bo ON bu.pid = bo.id
+        LEFT JOIN bre_info br ON br.source = bu.id
+
+        WHERE 1=1
+
+        <if test="query.goods != null and query.goods != ''">
+            AND bu.goods LIKE CONCAT('%', #{query.goods}, '%')
+        </if>
+        <if test="query.warehouse != null and query.warehouse != ''">
+            AND bu.warehouse LIKE CONCAT('%', #{query.warehouse}, '%')
+        </if>
+        <if test="query.supplier != null and query.supplier != ''">
+            AND bo.supplier LIKE CONCAT('%', #{query.supplier}, '%')
+        </if>
+        <if test="query.user != null and query.user != ''">
+            AND bo.user LIKE CONCAT('%', #{query.user}, '%')
+        </if>
+        <if test="query.people != null and query.people != ''">
+            AND bo.people LIKE CONCAT('%', #{query.people}, '%')
+        </if>
+        <if test="query.startTime != null and query.startTime != ''">
+            AND bo.time &gt;= #{query.startTime}
+        </if>
+        <if test="query.endTime != null and query.endTime != ''">
+            AND bo.time &lt;= #{query.endTime}
+        </if>
+
+        GROUP BY
+        <choose>
+            <when test="query.summaryType == 'supplier'">
+                bo.supplier, bu.goods , bu.attr, bu.warehouse, bu.unit
+            </when>
+            <when test="query.summaryType == 'people'">
+                bo.people, bu.goods, bu.attr, bu.warehouse, bu.unit
+            </when>
+            <when test="query.summaryType == 'user'">
+                bo.user, bu.goods, bu.attr, bu.warehouse, bu.unit
+            </when>
+            <otherwise>
+                bu.goods, bu.attr, bu.warehouse, bu.unit
+            </otherwise>
+        </choose>
+
+        ORDER BY bu.goods
+    </select>
+
+</mapper>

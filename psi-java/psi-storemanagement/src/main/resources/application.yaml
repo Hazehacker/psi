@@ -1,0 +1,50 @@
+server:
+  port: ${sp.store}
+spring:
+  application:
+    name: ${sn.store}
+  cloud:
+    sentinel:
+      transport:
+        #控制台地址
+        dashboard: ${sentinel.dashboard}
+      eager: true
+      datasource:
+        #流控规则
+        ds1:
+          file:
+            file: "classpath: flowrule.json"
+            data-type: json
+            rule-type: flow
+          #降级规则
+        ds2:
+          file:
+            file: "classpath: degraderule.json"
+            data-type: json
+            rule-type: degrade
+
+#开启sentinel服务熔断
+feign:
+  sentinel:
+    enabled: true
+
+# 负载均衡配置
+ribbon:
+  MaxAutoRetries: 0 #（默认1次 不包括第一次）最大重试次数，当注册中心中可以找到服务，但是服务连不上时将会重试，如果注册中心中找不到服务则直接走断路器
+  MaxAutoRetriesNextServer: 1 #（默认0次 不包括第一次）切换实例的重试次数
+  OkToRetryOnAllOperations: false #对所有操作请求都进行重试，如果是get则可以，如果是post，put等操作没有实现幂等的情况下是很危险的,所以设置为false
+  ConnectTimeout: 5000 #（默认1s，即1000）请求连接的超时时间
+  ReadTimeout: 5000 #（默认1s，即1000）请求处理的超时时间
+
+seata:
+  tx-service-group: tx-business
+  enabled: false
+  service:
+    #seata服务地址
+    grouplist:
+      default: ${seata.default}
+    #虚拟组和分组映射，key的名字与tx-service-group一致
+    vgroup-mapping:
+      tx-business: default
+    #开启全局事务
+    disable-global-transaction: false

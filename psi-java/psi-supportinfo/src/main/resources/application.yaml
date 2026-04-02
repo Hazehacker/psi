@@ -1,0 +1,13 @@
+server:
+  port: ${sp.supportinfo}
+spring:
+  application:
+    name: ${sn.supportinfo}
+  cloud:
+    nacos:
+      discovery:
+        ip: 115.29.140.172
+        port: 18501
+fastdfs:
+  tracker-servers: 101.37.69.164:22122
+  nginx-servers: 101.37.69.164:8888

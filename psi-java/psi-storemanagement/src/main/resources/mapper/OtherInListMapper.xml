@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.storemanagement.mapper.OtherInListMapper">
+
+    <!-- 结果映射 - 关键：为 time 字段指定 typeHandler -->
+    <resultMap id="EntryDOMap" type="com.zeroone.star.storemanagement.entity.EntryDO">
+        <id column="id" property="id"/>
+        <result column="frame" property="frame"/>
+        <result column="supplier" property="supplier"/>
+        <result column="type" property="type"/>
+
+        <!-- 关键修改：指定 typeHandler -->
+        <result column="time" property="time"
+                typeHandler="com.zeroone.star.storemanagement.handler.UnixTimestampTypeHandler"/>
+
+        <result column="number" property="number"/>
+        <result column="total" property="total"/>
+        <result column="cost" property="cost"/>
+        <result column="people" property="people"/>
+        <result column="examine" property="examine"/>
+        <result column="cse" property="cse"/>
+        <result column="check" property="check"/>
+        <result column="user" property="user"/>
+        <result column="data" property="data"/>
+    </resultMap>
+
+    <!-- 分页查询其他入库单列表 -->
+    <select id="selectOtherInListPage" resultMap="EntryDOMap">
+        SELECT DISTINCT
+        e.id,
+        e.frame,
+        IFNULL(s.name, '') AS supplier,
+        e.type,
+        e.time AS time,  -- 这里返回的是 Unix 时间戳
+        e.number,
+        e.total,
+        e.cost,
+        IFNULL(p.name, '') AS people,
+        e.examine,
+        e.cse,
+        e.check,
+        e.user,
+        e.data
+        FROM entry e
+        LEFT JOIN supplier s ON e.supplier = s.id
+        LEFT JOIN people p ON e.people = p.id
+        LEFT JOIN entry_info ei ON e.id = ei.pid
+        LEFT JOIN goods g ON ei.goods = g.id
+        WHERE 1=1
+
+        <!-- 商品名称查询 -->
+        <if test="query.name != null and query.name != ''">
+            AND g.name LIKE CONCAT('%', #{query.name}, '%')
+        </if>
+
+        <!-- 单据编号查询 -->
+        <if test="query.number != null and query.number != ''">
+            AND e.number LIKE CONCAT('%', #{query.number}, '%')
+        </if>
+
+        <!-- 供应商查询 -->
+        <if test="query.supplier != null and query.supplier != ''">
+            AND s.name LIKE CONCAT('%', #{query.supplier}, '%')
+        </if>
+
+        <!-- 制单人查询 -->
+        <if test="query.user != null and query.user != ''">
+            AND e.user LIKE CONCAT('%', #{query.user}, '%')
+        </if>
+
+        <!-- 关联人员查询 -->
+        <if test="query.people != null and query.people != ''">
+            AND p.name LIKE CONCAT('%', #{query.people}, '%')
+        </if>
+
+        <!-- 日期查询需要特殊处理 -->
+        <if test="query.startTime != null and query.startTime != ''">
+            AND e.time &gt;= UNIX_TIMESTAMP(#{query.startTime})
+        </if>
+
+        <if test="query.endTime != null and query.endTime != ''">
+            AND e.time &lt;= UNIX_TIMESTAMP(CONCAT(#{query.endTime}, ' 23:59:59'))
+        </if>
+
+        <!-- 审核状态查询（-1表示全部，不添加条件） -->
+        <if test="query.examine != null and query.examine != -1">
+            AND e.examine = #{query.examine}
+        </if>
+
+        <!-- 费用状态查询（-1表示全部，不添加条件） -->
+        <if test="query.cse != null and query.cse != -1">
+            AND e.cse = #{query.cse}
+        </if>
+
+        <!-- 核对状态查询（-1表示全部，不添加条件） -->
+        <if test="query.check != null and query.check != -1">
+            AND e.check = #{query.check}
+        </if>
+
+        <!-- 单据类型查询 -->
+        <if test="query.type != null">
+            AND e.type = #{query.type}
+        </if>
+
+        <!-- 备注信息查询 -->
+        <if test="query.data != null and query.data != ''">
+            AND e.data LIKE CONCAT('%', #{query.data}, '%')
+        </if>
+
+        <!-- 所属组织查询 -->
+        <if test="query.frame != null and query.frame != ''">
+            AND e.frame = #{query.frame}
+        </if>
+
+        ORDER BY e.time DESC
+    </select>
+</mapper>

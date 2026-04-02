@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.purchase.mapper.BuyInfoMapper">
+    <select id="getPurchaseNoteInfoDetail" resultType="com.zeroone.star.project.dto.j3.purchase.PurchaseNoteInfoDTO">
+        SELECT
+            bi.source, bi.goods, bi.attr, bi.unit, bi.warehouse, bi.batch, bi.price,
+            bi.nums, bi.discount, bi.dsc, bi.total, bi.tax, bi.tat, bi.tpt, bi.data,
+            UNIX_TIMESTAMP(bi.mfd) AS mfd,  bi.serial,
+
+            b.supplier,
+            DATE_FORMAT(b.time, '%Y-%m-%d') AS time, b.number,
+            b.total AS noteTotal, b.actual,
+            b.money,
+            b.cost,
+            b.account,
+            b.people,
+            b.logistics,
+            b.data AS data2, g.name,
+            g.number AS goodsNumber, g.spec
+        FROM
+            buy_info bi
+            LEFT JOIN
+            buy b ON bi.pid = b.id LEFT JOIN
+            goods g ON bi.goods = g.id WHERE
+            bi.id = #{id}
+    </select>
+
+    <delete id="deleteByPidAndIdNotIn">
+        DELETE FROM `buy_info`
+        WHERE `pid` = #{pid}
+        <if test="ids != null and ids.size() > 0">
+            AND `id` NOT IN
+            <foreach collection="ids" item="id" open="(" close=")" separator=",">
+                #{id}
+            </foreach>
+        </if>
+    </delete>
+    <select id="selectByPid" resultType="com.zeroone.star.purchase.DO.BuyInfoDO">
+        SELECT
+            `id`,
+            `pid`,
+            `source`,
+            `goods`,
+            `attr`,
+            `unit`,
+            `warehouse`,
+            `batch`,
+            `mfd`,
+            `price`,
+            `nums`,
+            `serial`,
+            `discount`,
+            `dsc`,
+            `total`,
+            `tax`,
+            `tat`,
+            `tpt`,
+            `data`,
+            `retreat`
+        FROM `buy_info`
+        WHERE `pid` = #{pid}
+    </select>
+
+</mapper>

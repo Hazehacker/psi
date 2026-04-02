@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.fundreport.ProfitMapper">
+
+    <!-- 查询 销售单 审核通过的 实际金额(actual) 和 单据费用(cost) 总和-->
+    <select id="getSellSummary" resultType="java.util.Map">
+        SELECT IFNULL(SUM(actual), 0) AS actualSum,
+               IFNULL(SUM(cost), 0)   AS costSum
+        FROM sell
+        WHERE examine = 1
+        <if test="query.startTime != null">
+          AND time >= #{query.startTime}
+        </if>
+        <if test="query.endTime != null">
+          AND time &lt;= #{query.endTime}
+        </if>
+    </select>
+    <!-- 查询 销售退货单 审核通过的 实际金额(actual) 和 单据费用(cost) 总和 -->
+    <select id="getSreSummary" resultType="java.util.Map">
+        SELECT IFNULL(SUM(actual), 0) AS actualSum,
+               IFNULL(SUM(cost), 0)   AS costSum
+        FROM sre
+        WHERE examine = 1
+        <if test="query.startTime != null">
+          AND time >= #{query.startTime}
+        </if>
+        <if test="query.endTime != null">
+          AND time &lt;= #{query.endTime}
+        </if>
+    </select>
+    <!-- 查询销售单的所有审核通过的 id -->
+    <select id="getSellIds" resultType="java.lang.String">
+        SELECT id
+        FROM sell
+        WHERE examine = 1
+        <if test="query.startTime != null">
+          AND time >= #{query.startTime}
+        </if>
+        <if test="query.endTime != null">
+          AND time &lt;= #{query.endTime}
+        </if>
+    </select>
+    <!-- 查询销售退货单的所有审核通过的 id -->
+    <select id="getSreIds" resultType="java.lang.String">
+        SELECT id
+        FROM sre
+        WHERE examine = 1
+        <if test="query.startTime != null">
+          AND time >= #{query.startTime}
+        </if>
+        <if test="query.endTime != null">
+          AND time &lt;= #{query.endTime}
+        </if>
+    </select>
+    
+    <!-- 查询销售出库的bct总和，使用IFNULL处理空值 -->
+    <select id="getSellBctSum" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(bct), 0)
+        FROM summary
+        WHERE type = 'sell' AND class IN
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+    
+    <!-- 查询退货入库的bct总和，使用IFNULL处理空值 -->
+    <select id="getSreBctSum" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(bct), 0)
+        FROM summary
+        WHERE type = 'sre' AND class IN
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+</mapper>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.homepage.mapper.AccountInfoMapper">
+
+    <select id="getDailyIncome" resultType="BigDecimal">
+        SELECT SUM(money)
+        FROM account_info
+        WHERE direction = 1 AND DATE(time) = #{todayDate}
+    </select>
+</mapper>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.sysconfig.mapper.MenuMapper">
+
+    <!-- 递归查询所有子节点id（包括直接和间接子节点） -->
+    <update id="setRecursionDepth">
+        SET SESSION cte_max_recursion_depth = 10000;
+    </update>
+    <select id="selectAllChildIds" parameterType="java.lang.String" resultType="java.lang.Integer">
+        WITH RECURSIVE child_menus AS (
+            -- 初始查询：直接子节点（pid = 传入的parentId）
+            SELECT id
+            FROM menu
+            WHERE pid = #{parentId}
+
+            UNION ALL
+
+            -- 递归查询：子节点的子节点（pid = 上一层查询的id）
+            SELECT m.id
+            FROM menu m
+                     INNER JOIN child_menus cm ON m.pid = cm.id
+        )
+        SELECT id FROM child_menus;
+    </select>
+</mapper>

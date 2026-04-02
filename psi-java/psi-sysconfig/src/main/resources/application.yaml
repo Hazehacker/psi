@@ -1,0 +1,5 @@
+server:
+  port: ${sp.sysconfig}
+spring:
+  application:
+    name: ${sn.sysconfig}

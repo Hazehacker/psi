@@ -1,0 +1,48 @@
+server:
+  port: ${sp.fund}
+spring:
+  application:
+    name: ${sn.fund}
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/zo_psi?useUnicode=true&useSSL=false&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      name: DruidDataSource
+      initial-size: 1
+      min-idle: 1
+      max-active: 20
+      async-init: true
+      max-wait: 6000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      max-evictable-idle-time-millis: 900000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+      connection-init-sqls: SET NAMES utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+      filters: stat
+
+seata:
+  tx-service-group: tx-business
+  enabled: true
+  service:
+    #seata服务地址
+    grouplist:
+      default: ${seata.default}
+    #虚拟组和分组映射，key的名字与tx-service-group一致
+    vgroup-mapping:
+      tx-business: default
+    #开启全局事务
+    disable-global-transaction: false
+
+# 添加FastDFS配置解决启动问题
+fastdfs:
+  tracker_servers: 127.0.0.1:22122
+  connect_timeout_in_seconds: 5
+  network_timeout_in_seconds: 30

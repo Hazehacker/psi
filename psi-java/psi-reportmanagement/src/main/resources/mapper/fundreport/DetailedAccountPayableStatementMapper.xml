@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.fundreport.DetailedAccountPayableStatementMapper">
+
+    <select id="selectDetailedAccountPayableStatement"
+            resultType="com.zeroone.star.project.dto.j5.fundreport.DetailedAccountPayableStatementDTO">
+        -- 供应商汇总行
+        SELECT
+        s.name AS supplier,
+        '' AS documentType,
+        '' AS frame,
+        '' AS dateTime,
+        s.number AS documentNumber,
+        0 AS accountsPayableIncrease,
+        0 AS advancePaymentIncrease,
+        s.balance AS accountsPayableBalance,
+        '' AS remark
+        FROM supplier s
+        <where>
+            <if test="query.supplier != null and query.supplier != ''">
+                AND s.name LIKE CONCAT('%', #{query.supplier}, '%')
+            </if>
+
+            <if test="query.supplierType != null and query.supplierType != '' and query.supplierType != '全部供应商'">
+                AND s.category = #{query.supplierType}
+            </if>
+        </where>
+
+        UNION ALL
+
+        -- 期初余额行
+        SELECT
+        '' AS supplier,
+        '期初余额' AS documentType,
+        '' AS frame,
+        '' AS dateTime,
+        '' AS documentNumber,
+        0 AS accountsPayableIncrease,
+        0 AS advancePaymentIncrease,
+        0 AS accountsPayableBalance,
+        '' AS remark
+        FROM supplier s
+        <where>
+            <if test="query.supplier != null and query.supplier != ''">
+                AND s.name LIKE CONCAT('%', #{query.supplier}, '%')
+            </if>
+
+            <if test="query.supplierType != null and query.supplierType != '' and query.supplierType != '全部供应商'">
+                AND s.category = #{query.supplierType}
+            </if>
+        </where>
+
+        UNION ALL
+
+        -- 付款单明细行
+        SELECT
+        '' AS supplier,
+        '付款单' AS documentType,
+        f.name AS frame,
+        DATE_FORMAT(o.time, '%Y-%m-%d') AS dateTime,
+        o.number AS documentNumber,
+        0 AS accountsPayableIncrease,
+        o.total AS advancePaymentIncrease,
+        s.balance AS accountsPayableBalance,
+        COALESCE(o.data, '') AS remark
+        FROM supplier s
+        INNER JOIN omy o ON s.id = o.supplier
+        LEFT JOIN frame f ON o.frame = f.id
+        <where>
+            <if test="query.supplier != null and query.supplier != ''">
+                AND s.name LIKE CONCAT('%', #{query.supplier}, '%')
+            </if>
+
+            <if test="query.supplierType != null and query.supplierType != '' and query.supplierType != '全部供应商'">
+                AND s.category = #{query.supplierType}
+            </if>
+
+            <if test="query.startTime != null and query.startTime != ''">
+                AND DATE(o.time) >= #{query.startTime}
+            </if>
+
+            <if test="query.endTime != null and query.endTime != ''">
+                AND DATE(o.time) &lt;= #{query.endTime}
+            </if>
+        </where>
+
+        ORDER BY
+        CASE WHEN supplier != '' THEN 1 ELSE 2 END,
+        CASE WHEN documentType = '期初余额' THEN 1
+        WHEN documentType = '付款单' THEN 2
+        ELSE 3 END,
+        dateTime DESC
+    </select>
+
+    <select id="selectAllForExport"
+            resultType="com.zeroone.star.project.dto.j5.fundreport.DetailedAccountPayableStatementDTO">
+        -- 供应商汇总行
+        SELECT
+        s.name AS supplier,
+        '' AS documentType,
+        '' AS frame,
+        '' AS dateTime,
+        s.number AS documentNumber,
+        0 AS accountsPayableIncrease,
+        0 AS advancePaymentIncrease,
+        s.balance AS accountsPayableBalance,
+        '' AS remark
+        FROM supplier s
+        <where>
+            <if test="query.supplier != null and query.supplier != ''">
+                AND s.name LIKE CONCAT('%', #{query.supplier}, '%')
+            </if>
+
+            <if test="query.supplierType != null and query.supplierType != '' and query.supplierType != '全部供应商'">
+                AND s.category = #{query.supplierType}
+            </if>
+        </where>
+
+        UNION ALL
+
+        -- 期初余额行
+        SELECT
+        '' AS supplier,
+        '期初余额' AS documentType,
+        '' AS frame,
+        '' AS dateTime,
+        '' AS documentNumber,
+        0 AS accountsPayableIncrease,
+        0 AS advancePaymentIncrease,
+        0 AS accountsPayableBalance,
+        '' AS remark
+        FROM supplier s
+        <where>
+            <if test="query.supplier != null and query.supplier != ''">
+                AND s.name LIKE CONCAT('%', #{query.supplier}, '%')
+            </if>
+
+            <if test="query.supplierType != null and query.supplierType != '' and query.supplierType != '全部供应商'">
+                AND s.category = #{query.supplierType}
+            </if>
+        </where>
+
+        UNION ALL
+
+        -- 付款单明细行
+        SELECT
+        '' AS supplier,
+        '付款单' AS documentType,
+        f.name AS frame,
+        DATE_FORMAT(o.time, '%Y-%m-%d') AS dateTime,
+        o.number AS documentNumber,
+        0 AS accountsPayableIncrease,
+        o.total AS advancePaymentIncrease,
+        s.balance AS accountsPayableBalance,
+        COALESCE(o.data, '') AS remark
+        FROM supplier s
+        INNER JOIN omy o ON s.id = o.supplier
+        LEFT JOIN frame f ON o.frame = f.id
+        <where>
+            <if test="query.supplier != null and query.supplier != ''">
+                AND s.name LIKE CONCAT('%', #{query.supplier}, '%')
+            </if>
+
+            <if test="query.supplierType != null and query.supplierType != '' and query.supplierType != '全部供应商'">
+                AND s.category = #{query.supplierType}
+            </if>
+
+            <if test="query.startTime != null and query.startTime != ''">
+                AND DATE(o.time) >= #{query.startTime}
+            </if>
+
+            <if test="query.endTime != null and query.endTime != ''">
+                AND DATE(o.time) &lt;= #{query.endTime}
+            </if>
+        </where>
+
+        ORDER BY
+        CASE WHEN supplier != '' THEN 1 ELSE 2 END,
+        CASE WHEN documentType = '期初余额' THEN 1
+        WHEN documentType = '付款单' THEN 2
+        ELSE 3 END,
+        dateTime DESC
+    </select>
+
+</mapper>

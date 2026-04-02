@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.procurementreport.PurchaseOrderTrackingFormMapper">
+
+    <sql id="UnifiedDtoPath">com.zeroone.star.project.dto.j5.procurementreport.PurchaseOrderTrackingFormDTO</sql>
+
+    <resultMap id="Type0_ItemMap" type="com.zeroone.star.project.dto.j5.procurementreport.PurchaseOrderTrackingFormDTO">
+        <result property="goodsName" column="goodsName"/>
+        <result property="attr" column="attr"/>
+        <result property="warehouseName" column="warehouseName"/>
+        <result property="unit" column="unit"/>
+        <result property="price" column="price"/>
+        <result property="nums" column="nums"/>
+        <result property="total" column="total"/>
+        <result property="itemRemark" column="itemRemark"/>
+        <result property="itemState" column="itemState"/>
+        <result property="unstockedQuantity" column="unstockedQuantity"/>
+        <result property="unstockedAmount" column="unstockedAmount"/>
+        <result property="arrival" column="arrival"/>
+    </resultMap>
+
+    <resultMap id="Type0_ParentMap" type="com.zeroone.star.project.dto.j5.procurementreport.PurchaseOrderTrackingFormDTO">
+        <id property="orderId" column="orderId"/>
+        <result property="frameName" column="frameName"/>
+        <result property="supplierName" column="supplierName"/>
+        <result property="time" column="time"/>
+        <result property="number" column="number"/>
+        <result property="state" column="state"/>
+        <result property="arrival" column="arrival"/>
+        <result property="totalAmount" column="totalAmount"/>
+        <result property="totalUnstockedQuantity" column="totalUnstockedQuantity"/>
+        <result property="totalUnstockedAmount" column="totalUnstockedAmount"/>
+        <collection property="items" resultMap="Type0_ItemMap"/>
+    </resultMap>
+
+    <resultMap id="Type1_ItemMap" type="com.zeroone.star.project.dto.j5.procurementreport.PurchaseOrderTrackingFormDTO">
+        <result property="frameName" column="frameName"/>
+        <result property="supplierName" column="supplierName"/>
+        <result property="time" column="time"/>
+        <result property="number" column="number"/>
+        <result property="arrival" column="arrival"/>
+        <result property="state" column="orderState"/>
+        <result property="unit" column="unit"/>
+        <result property="price" column="price"/>
+        <result property="nums" column="nums"/>
+        <result property="total" column="total"/>
+        <result property="itemRemark" column="itemRemark"/>
+        <result property="itemState" column="itemState"/>
+        <result property="unstockedQuantity" column="unstockedQuantity"/>
+        <result property="unstockedAmount" column="unstockedAmount"/>
+    </resultMap>
+
+    <resultMap id="Type1_ParentMap" type="com.zeroone.star.project.dto.j5.procurementreport.PurchaseOrderTrackingFormDTO">
+        <id property="groupKey" column="groupKey"/>
+        <result property="goodsName" column="goodsName"/>
+        <result property="attr" column="attr"/>
+        <result property="warehouseName" column="warehouseName"/>
+        <result property="totalAmount" column="totalAmount"/>
+        <result property="totalUnstockedQuantity" column="totalUnstockedQuantity"/>
+        <result property="totalUnstockedAmount" column="totalUnstockedAmount"/>
+        <collection property="items" resultMap="Type1_ItemMap"/>
+    </resultMap>
+
+    <sql id="commonWhereClause">
+        <where>
+            <if test="query.supplier != null and query.supplier != ''">
+                AND s.name LIKE CONCAT('%', #{query.supplier}, '%')
+            </if>
+            <if test="query.goods != null and query.goods != ''">
+                AND g.name LIKE CONCAT('%', #{query.goods}, '%')
+            </if>
+            <if test="query.number != null and query.number != ''">
+                AND b.number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.warehouse != null and query.warehouse != ''">
+                AND w.name LIKE CONCAT('%', #{query.warehouse}, '%')
+            </if>
+            <if test="query.state != null">
+                AND b.state = #{query.state}
+            </if>
+            <if test="query.begintime != null">
+                AND b.time &gt;= #{query.begintime}
+            </if>
+            <if test="query.endtime != null">
+                AND b.time &lt; DATE_ADD(#{query.endtime}, INTERVAL 1 DAY)
+            </if>
+            <if test="query.beginarrival != null">
+                AND b.arrival &gt;= #{query.beginarrival}
+            </if>
+            <if test="query.endarrival != null">
+                AND b.arrival &lt; DATE_ADD(#{query.endarrival}, INTERVAL 1 DAY)
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectPurchaseOrderTrackingForm" resultMap="Type0_ParentMap">
+        SELECT
+        b.id AS orderId, o.name AS frameName, s.name AS supplierName,
+        b.time AS time, b.number AS number, b.state AS state, b.arrival AS arrival,
+        b.data AS orderRemark,
+        bi.goods AS goods, g.name AS goodsName, bi.attr AS attr,
+        bi.warehouse AS warehouse, w.name AS warehouseName,
+        bi.unit AS unit, bi.price AS price, bi.nums AS nums, bi.total AS total,
+        bi.data AS itemRemark,
+        CASE WHEN bi.handle &lt;= 0 THEN 0 WHEN bi.handle &gt;= bi.nums THEN 2 ELSE 1 END AS itemState,
+        (bi.nums - bi.handle) AS unstockedQuantity,
+        (bi.nums - bi.handle) * bi.price AS unstockedAmount,
+        SUM(bi.total) OVER (PARTITION BY b.id) AS totalAmount,
+        SUM(bi.nums - bi.handle) OVER (PARTITION BY b.id) AS totalUnstockedQuantity,
+        SUM((bi.nums - bi.handle) * bi.price) OVER (PARTITION BY b.id) AS totalUnstockedAmount
+        FROM bor b
+        JOIN bor_info bi ON b.id = bi.pid
+        LEFT JOIN supplier s ON b.supplier = s.id
+        LEFT JOIN goods g ON bi.goods = g.id
+        LEFT JOIN warehouse w ON bi.warehouse = w.id
+        LEFT JOIN frame o ON b.frame = o.id
+        <include refid="commonWhereClause"/>
+        ORDER BY b.time DESC, b.id ASC
+    </select>
+
+    <select id="selectAllForExport" resultMap="Type0_ParentMap">
+        SELECT
+        b.id AS orderId, o.name AS frameName, s.name AS supplierName,
+        b.time AS time, b.number AS number, b.state AS state, b.arrival AS arrival,
+        b.data AS orderRemark,
+        bi.goods AS goods, g.name AS goodsName, bi.attr AS attr,
+        bi.warehouse AS warehouse, w.name AS warehouseName,
+        bi.unit AS unit, bi.price AS price, bi.nums AS nums, bi.total AS total,
+        bi.data AS itemRemark,
+        CASE WHEN bi.handle &lt;= 0 THEN 0 WHEN bi.handle &gt;= bi.nums THEN 2 ELSE 1 END AS itemState,
+        (bi.nums - bi.handle) AS unstockedQuantity,
+        (bi.nums - bi.handle) * bi.price AS unstockedAmount,
+        SUM(bi.total) OVER (PARTITION BY b.id) AS totalAmount,
+        SUM(bi.nums - bi.handle) OVER (PARTITION BY b.id) AS totalUnstockedQuantity,
+        SUM((bi.nums - bi.handle) * bi.price) OVER (PARTITION BY b.id) AS totalUnstockedAmount
+        FROM bor b
+        JOIN bor_info bi ON b.id = bi.pid
+        LEFT JOIN supplier s ON b.supplier = s.id
+        LEFT JOIN goods g ON bi.goods = g.id
+        LEFT JOIN warehouse w ON bi.warehouse = w.id
+        LEFT JOIN frame o ON b.frame = o.id
+        <include refid="commonWhereClause"/>
+        ORDER BY b.time DESC, b.id ASC
+    </select>
+
+    <select id="selectPurchaseOrderTrackingFormByGoods" resultMap="Type1_ParentMap">
+        SELECT
+        CONCAT(g.id, '_', bi.attr, '_', w.id) AS groupKey,
+        g.name AS goodsName, bi.attr AS attr, w.name AS warehouseName,
+        o.name AS frameName, s.name AS supplierName,
+        b.time AS time, b.number AS number, b.arrival AS arrival,
+        b.state AS orderState,
+        bi.unit AS unit, bi.price AS price, bi.nums AS nums, bi.total AS total,
+        bi.data AS itemRemark,
+        CASE WHEN bi.handle &lt;= 0 THEN 0 WHEN bi.handle &gt;= bi.nums THEN 2 ELSE 1 END AS itemState,
+        (bi.nums - bi.handle) AS unstockedQuantity,
+        (bi.nums - bi.handle) * bi.price AS unstockedAmount,
+        SUM(bi.total) OVER (PARTITION BY g.id, bi.attr, w.id) AS totalAmount,
+        SUM(bi.nums - bi.handle) OVER (PARTITION BY g.id, bi.attr, w.id) AS totalUnstockedQuantity,
+        SUM((bi.nums - bi.handle) * bi.price) OVER (PARTITION BY g.id, bi.attr, w.id) AS totalUnstockedAmount
+        FROM bor b
+        JOIN bor_info bi ON b.id = bi.pid
+        LEFT JOIN supplier s ON b.supplier = s.id
+        LEFT JOIN goods g ON bi.goods = g.id
+        LEFT JOIN warehouse w ON bi.warehouse = w.id
+        LEFT JOIN frame o ON b.frame = o.id
+        <include refid="commonWhereClause"/>
+        ORDER BY g.name ASC, bi.attr ASC, w.name ASC, b.time DESC
+    </select>
+
+    <select id="selectAllForExportByGoods" resultMap="Type1_ParentMap">
+        SELECT
+        CONCAT(g.id, '_', bi.attr, '_', w.id) AS groupKey,
+        g.name AS goodsName, bi.attr AS attr, w.name AS warehouseName,
+        o.name AS frameName, s.name AS supplierName,
+        b.time AS time, b.number AS number, b.arrival AS arrival,
+        b.state AS orderState,
+        bi.unit AS unit, bi.price AS price, bi.nums AS nums, bi.total AS total,
+        bi.data AS itemRemark,
+        CASE WHEN bi.handle &lt;= 0 THEN 0 WHEN bi.handle &gt;= bi.nums THEN 2 ELSE 1 END AS itemState,
+        (bi.nums - bi.handle) AS unstockedQuantity,
+        (bi.nums - bi.handle) * bi.price AS unstockedAmount,
+        SUM(bi.total) OVER (PARTITION BY g.id, bi.attr, w.id) AS totalAmount,
+        SUM(bi.nums - bi.handle) OVER (PARTITION BY g.id, bi.attr, w.id) AS totalUnstockedQuantity,
+        SUM((bi.nums - bi.handle) * bi.price) OVER (PARTITION BY g.id, bi.attr, w.id) AS totalUnstockedAmount
+        FROM bor b
+        JOIN bor_info bi ON b.id = bi.pid
+        LEFT JOIN supplier s ON b.supplier = s.id
+        LEFT JOIN goods g ON bi.goods = g.id
+        LEFT JOIN warehouse w ON bi.warehouse = w.id
+        LEFT JOIN frame o ON b.frame = o.id
+        <include refid="commonWhereClause"/>
+        ORDER BY g.name ASC, bi.attr ASC, w.name ASC, b.time DESC
+    </select>
+
+</mapper>

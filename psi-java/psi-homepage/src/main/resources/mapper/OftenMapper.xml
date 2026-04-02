@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.homepage.mapper.OftenMapper">
+
+    <select id="getCommonMenus" resultType="com.zeroone.star.project.dto.j1.homepage.CommonMenuDTO">
+        SELECT menu.name AS label, menu.resource AS `to`
+        FROM often
+        LEFT JOIN menu ON often.name = menu.name AND often.key = menu.key
+        WHERE often.user = #{userId}
+    </select>
+</mapper>

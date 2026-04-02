@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.finance.mapper.tradeinvoice.InvoiceMapper">
+    <select id="selectInvoiceWithConditions"
+            resultType="com.zeroone.star.project.dto.j8.finance.tradeinvoice.TradeInvoiceDTO">
+        SELECT
+        bill.id AS id,
+        bill.type AS type,
+        f.name AS frame,
+        IF(bill.type IN ('sell','sre'), cu.name, su.name) AS unit,
+        bill.time AS time,
+        bill.number AS number,
+        CASE
+        WHEN bill.inv_status = 3 THEN '无需开具'
+        WHEN IFNULL(inv.opened_amount,0) = 0 THEN '未开票'
+        WHEN IFNULL(inv.opened_amount,0) &lt; bill.total THEN '部分开票'
+        ELSE '已开票'
+        END AS status,
+        bill.total AS totalCount,
+        IFNULL(inv.opened_amount,0) AS invoicedCount,
+        GREATEST(bill.total - IFNULL(inv.opened_amount,0), 0) AS disinvoicedCount,
+        CAST(0 AS DECIMAL(16,2)) AS invoiceTotal
+        FROM
+        (
+        /* 统一成一张“单据基表” */
+        SELECT 'buy' AS type, b.id, b.frame, b.supplier AS unit_id,
+        b.time, b.number, b.actual AS total, b.invoice AS inv_status
+        FROM buy b
+        UNION ALL
+        SELECT 'bre' AS type, br.id, br.frame, br.supplier AS unit_id,
+        br.time, br.number, br.actual AS total, br.invoice AS inv_status
+        FROM bre br
+        UNION ALL
+        SELECT 'sell' AS type, s.id, s.frame, s.customer AS unit_id,
+        s.time, s.number, s.actual AS total, s.invoice AS inv_status
+        FROM sell s
+        UNION ALL
+        SELECT 'sre' AS type, sr.id, sr.frame, sr.customer AS unit_id,
+        sr.time, sr.number, sr.actual AS total, sr.invoice AS inv_status
+        FROM sre sr
+        ) bill
+        /* 发票金额汇总 */
+        LEFT JOIN (
+        SELECT `type`, `class` AS bill_id, SUM(money) AS opened_amount
+        FROM invoice
+        GROUP BY `type`, `class`
+        ) inv
+        ON inv.`type` = bill.type AND inv.bill_id = bill.id
+        /* 组织与往来单位名称 */
+        LEFT JOIN frame f ON f.id = bill.frame
+        LEFT JOIN customer cu ON (bill.type IN ('sell','sre') AND cu.id = bill.unit_id)
+        LEFT JOIN supplier su ON (bill.type IN ('buy','bre') AND su.id = bill.unit_id)
+
+        <where>
+            <!-- 单据编号 模糊 -->
+            <if test="q.number != null and q.number != ''">
+                AND bill.number LIKE CONCAT('%', #{q.number}, '%')
+            </if>
+
+            <!-- 单据类型 多选 -->
+            <if test="q.type != null and q.type.size > 0">
+                AND bill.type IN
+                <foreach collection="q.type" item="t" open="(" separator="," close=")">
+                    #{t}
+                </foreach>
+            </if>
+
+            <!-- 发票状态 多选（使用主表枚举 0/1/2/3） -->
+            <if test="q.status != null and q.status.size > 0">
+                AND bill.inv_status IN
+                <foreach collection="q.status" item="s" open="(" separator="," close=")">
+                    #{s}
+                </foreach>
+            </if>
+
+            <!-- 供应商过滤：仅对 buy/bre 生效 -->
+            <if test="q.supplier != null and q.supplier != ''">
+                AND (bill.type IN ('buy','bre') AND su.id = #{q.supplier})
+            </if>
+
+            <!-- 客户过滤：仅对 sell/sre 生效 -->
+            <if test="q.customer != null and q.customer != ''">
+                AND (bill.type IN ('sell','sre') AND cu.id = #{q.customer})
+            </if>
+
+            <!-- 起止日期（LocalDate，拼成一整天） -->
+            <if test="q.startDate != null">
+                AND bill.time &gt;= CONCAT(#{q.startDate}, ' 00:00:00')
+            </if>
+            <if test="q.endDate != null">
+                AND bill.time &lt;= CONCAT(#{q.endDate}, ' 23:59:59')
+            </if>
+        </where>
+
+        ORDER BY bill.time DESC, bill.number DESC
+    </select>
+
+    <select id="selectBillSnapshot" resultType="com.zeroone.star.finance.entity.BillSnapshot">
+        SELECT b.type, b.id, b.actual, b.inv_status AS invStatus,
+        IFNULL(i.opened_amount, 0) AS openedAmount
+        FROM (
+        <trim suffixOverrides="UNION ALL">
+            <if test="buyIds != null and buyIds.size() > 0">
+                SELECT 'buy' AS type, id, actual, invoice AS inv_status
+                FROM buy
+                WHERE id IN
+                <foreach collection="buyIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+                UNION ALL
+            </if>
+            <if test="breIds != null and breIds.size() > 0">
+                SELECT 'bre' AS type, id, actual, invoice AS inv_status
+                FROM bre
+                WHERE id IN
+                <foreach collection="breIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+                UNION ALL
+            </if>
+            <if test="sellIds != null and sellIds.size() > 0">
+                SELECT 'sell' AS type, id, actual, invoice AS inv_status
+                FROM sell
+                WHERE id IN
+                <foreach collection="sellIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+                UNION ALL
+            </if>
+            <if test="sreIds != null and sreIds.size() > 0">
+                SELECT 'sre' AS type, id, actual, invoice AS inv_status
+                FROM sre
+                WHERE id IN
+                <foreach collection="sreIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </if>
+        </trim>
+        ) b
+        LEFT JOIN (
+        SELECT `type`, `class` AS bill_id, SUM(money) AS opened_amount
+        FROM invoice
+        GROUP BY `type`, `class`
+        ) i ON i.`type` = b.type AND i.bill_id = b.id
+    </select>
+
+    <select id="selectInvoiceListByKeys"
+            resultType="com.zeroone.star.project.dto.j8.finance.tradeinvoice.TradeInvoiceDTO">
+        SELECT
+        bill.id,
+        bill.type,
+        f.name AS frame,
+        COALESCE(cu.name, su.name) AS unit,
+        bill.time,
+        bill.number,
+        CASE
+        WHEN bill.inv_status = 3 THEN '无需开具'
+        WHEN IFNULL(inv.opened_amount, 0) = 0 THEN '未开票'
+        WHEN IFNULL(inv.opened_amount, 0) &lt; bill.total THEN '部分开票'
+        ELSE '已开票'
+        END AS status,
+        bill.total AS totalCount,
+        IFNULL(inv.opened_amount, 0) AS invoicedCount,
+        GREATEST(bill.total - IFNULL(inv.opened_amount, 0), 0) AS disinvoicedCount,
+        CAST(0.00 AS DECIMAL(16,2)) AS invoiceTotal
+        FROM (
+        SELECT 'buy' AS type, b.id, b.frame, b.supplier AS unit_id, b.`time`, b.`number`, b.actual AS total, b.invoice
+        AS inv_status FROM buy b
+        UNION ALL
+        SELECT 'bre' AS type, br.id, br.frame, br.supplier AS unit_id, br.`time`, br.`number`, br.actual AS total,
+        br.invoice AS inv_status FROM bre br
+        UNION ALL
+        SELECT 'sell' AS type, s.id, s.frame, s.customer AS unit_id, s.`time`, s.`number`, s.actual AS total, s.invoice
+        AS inv_status FROM sell s
+        UNION ALL
+        SELECT 'sre' AS type, sr.id, sr.frame, sr.customer AS unit_id, sr.`time`, sr.`number`, sr.actual AS total,
+        sr.invoice AS inv_status FROM sre sr
+        ) bill
+        LEFT JOIN (
+        SELECT `type`, `class` AS bill_id, SUM(money) AS opened_amount
+        FROM invoice
+        GROUP BY `type`, `class`
+        ) inv ON inv.`type` = bill.type AND inv.bill_id = bill.id
+        LEFT JOIN frame f ON f.id = bill.frame
+        LEFT JOIN customer cu ON (bill.type IN ('sell','sre') AND cu.id = bill.unit_id)
+        LEFT JOIN supplier su ON (bill.type IN ('buy','bre') AND su.id = bill.unit_id)
+        WHERE
+        <choose>
+            <when test="keys != null and keys.size() > 0">
+                <foreach collection="keys" item="k" separator=" OR " open="(" close=")">
+                    (bill.type = #{k.type} AND bill.id = #{k.id})
+                </foreach>
+            </when>
+            <otherwise>1 = 0</otherwise>
+        </choose>
+        ORDER BY bill.`time` DESC, bill.`number` DESC
+    </select>
+
+    <select id="getInvoiceReportList"
+            resultType="com.zeroone.star.project.dto.j8.finance.tradeinvoice.InvoiceReportDTO">
+        SELECT
+        inv.id AS id,
+        inv.`type` AS `type`,
+        f.`name` AS `frame`,
+        COALESCE(cu.`name`, su.`name`) AS businessUnit,
+        bill.`time` AS `time`,
+        bill.`number` AS `number`,
+        bill.`actual` AS `total`,
+        inv.`time` AS invTime,
+        inv.`number` AS invNumber,
+        /* 单据口径的发票状态（与页面一致） */
+        CASE
+        WHEN bill.inv_status = 3 THEN '无需开具'
+        WHEN IFNULL(inv_sum.opened_amount, 0) = 0 THEN '未开票'
+        WHEN IFNULL(inv_sum.opened_amount, 0) &lt; bill.`actual` THEN '部分开票'
+        ELSE '已开票'
+        END AS `invoice`,
+        inv.`title` AS `title`,
+        inv.`money` AS invMoney,
+        inv.`file` AS `file`,
+        inv.`data` AS `data`
+        FROM invoice inv
+        /* 业务单据联合视图 */
+        LEFT JOIN (
+        SELECT 'buy' AS `type`, b.`id`, b.`frame`, b.`supplier` AS unit_id, b.`time`, b.`number`, b.`actual`,
+        b.`invoice` AS inv_status
+        FROM buy b
+        UNION ALL
+        SELECT 'bre' AS `type`, br.`id`, br.`frame`, br.`supplier` AS unit_id, br.`time`, br.`number`, br.`actual`,
+        br.`invoice` AS inv_status
+        FROM bre br
+        UNION ALL
+        SELECT 'sell' AS `type`, s.`id`, s.`frame`, s.`customer` AS unit_id, s.`time`, s.`number`, s.`actual`,
+        s.`invoice` AS inv_status
+        FROM sell s
+        UNION ALL
+        SELECT 'sre' AS `type`, sr.`id`, sr.`frame`, sr.`customer` AS unit_id, sr.`time`, sr.`number`, sr.`actual`,
+        sr.`invoice` AS inv_status
+        FROM sre sr
+        ) bill ON bill.`type` = inv.`type` AND bill.`id` = inv.`class`
+        /* 同单据的已开票汇总 */
+        LEFT JOIN (
+        SELECT `type`, `class`, SUM(`money`) AS opened_amount
+        FROM invoice
+        GROUP BY `type`, `class`
+        ) inv_sum ON inv_sum.`type` = inv.`type` AND inv_sum.`class` = inv.`class`
+        LEFT JOIN frame f ON f.`id` = bill.`frame`
+        LEFT JOIN supplier su ON (inv.`type` IN ('buy','bre') AND su.`id` = bill.`unit_id`)
+        LEFT JOIN customer cu ON (inv.`type` IN ('sell','sre') AND cu.`id` = bill.`unit_id`)
+        WHERE 1 = 1
+        <!-- 供应商 & 客户二选一过滤（按单据往来单位） -->
+        <if test="q.supplier != null and q.supplier != ''">
+            AND (inv.`type` IN ('buy','bre') AND bill.`unit_id` = #{q.supplier})
+        </if>
+        <if test="q.customer != null and q.customer != ''">
+            AND (inv.`type` IN ('sell','sre') AND bill.`unit_id` = #{q.customer})
+        </if>
+
+        <!-- 单据编号（所属单据编号） -->
+        <if test="q.number != null and q.number != ''">
+            AND bill.`number` LIKE CONCAT('%', #{q.number}, '%')
+        </if>
+
+        <!-- 类型 -->
+        <if test="q.mold != null and q.mold.size() > 0">
+            AND inv.`type` IN
+            <foreach collection="q.mold" item="t" open="(" close=")" separator=",">
+                #{t}
+            </foreach>
+        </if>
+
+        <!-- 开票时间范围（针对 invoice.time） -->
+        <if test="q.startDate != null">
+            AND inv.`time` &gt;= CONCAT(#{q.startDate}, ' 00:00:00')
+        </if>
+        <if test="q.endDate != null">
+            AND inv.`time` &lt;= CONCAT(#{q.endDate}, ' 23:59:59')
+        </if>
+
+        <!-- 发票号码 / 抬头 -->
+        <if test="q.inr != null and q.inr != ''">
+            AND inv.`number` LIKE CONCAT('%', #{q.inr}, '%')
+        </if>
+        <if test="q.title != null and q.title != ''">
+            AND inv.`title` LIKE CONCAT('%', #{q.title}, '%')
+        </if>
+
+        ORDER BY inv.`time` DESC, inv.`number` DESC
+    </select>
+
+    <select id="selectInvoiceReportByIds"
+            resultType="com.zeroone.star.project.dto.j8.finance.tradeinvoice.InvoiceReportDTO">
+        SELECT
+        inv.id AS id,
+        inv.`type` AS `type`,
+        f.`name` AS frame,
+        COALESCE(cu.`name`, su.`name`) AS businessUnit,
+        bill.`time` AS `time`,
+        bill.`number` AS `number`,
+        bill.`actual` AS `total`,
+        inv.`time` AS invTime,
+        inv.`number` AS invNumber,
+        /* 状态字段 DTO 里有，虽然导出不展示，顺带算出无妨 */
+        CASE
+        WHEN bill.inv_status = 3 THEN '无需开具'
+        WHEN IFNULL(inv_sum.opened_amount, 0) = 0 THEN '未开票'
+        WHEN IFNULL(inv_sum.opened_amount, 0) &lt; bill.`actual` THEN '部分开票'
+        ELSE '已开票'
+        END AS `invoice`,
+        inv.`title` AS `title`,
+        inv.`money` AS invMoney,
+        inv.`file` AS `file`,
+        inv.`data` AS `data`
+        FROM invoice inv
+        LEFT JOIN (
+        SELECT 'buy' AS `type`, b.`id`, b.`frame`, b.`supplier` AS unit_id, b.`time`, b.`number`, b.`actual`,
+        b.`invoice` AS inv_status FROM buy b
+        UNION ALL
+        SELECT 'bre' AS `type`, br.`id`, br.`frame`, br.`supplier` AS unit_id, br.`time`, br.`number`, br.`actual`,
+        br.`invoice` AS inv_status FROM bre br
+        UNION ALL
+        SELECT 'sell' AS `type`, s.`id`, s.`frame`, s.`customer` AS unit_id, s.`time`, s.`number`, s.`actual`,
+        s.`invoice` AS inv_status FROM sell s
+        UNION ALL
+        SELECT 'sre' AS `type`, sr.`id`, sr.`frame`, sr.`customer` AS unit_id, sr.`time`, sr.`number`, sr.`actual`,
+        sr.`invoice` AS inv_status FROM sre sr
+        ) bill ON bill.`type` = inv.`type` AND bill.`id` = inv.`class`
+        LEFT JOIN (
+        SELECT `type`, `class`, SUM(`money`) AS opened_amount
+        FROM invoice
+        GROUP BY `type`, `class`
+        ) inv_sum ON inv_sum.`type` = inv.`type` AND inv_sum.`class` = inv.`class`
+        LEFT JOIN frame f ON f.`id` = bill.`frame`
+        LEFT JOIN supplier su ON (inv.`type` IN ('buy','bre') AND su.`id` = bill.`unit_id`)
+        LEFT JOIN customer cu ON (inv.`type` IN ('sell','sre') AND cu.`id` = bill.`unit_id`)
+        WHERE 1 = 1
+        AND inv.`id` IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        ORDER BY inv.`time` DESC, inv.`number` DESC
+    </select>
+</mapper>

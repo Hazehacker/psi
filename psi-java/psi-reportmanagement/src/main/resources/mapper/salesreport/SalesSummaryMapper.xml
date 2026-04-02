@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.salesreport.SalesSummaryMapper">
+
+
+    <select id="selectSalesSummaryPage" resultType="com.zeroone.star.reportmanagement.entity.SalesSummaryDO">
+        select
+            <choose>
+                <when test="query.groupBy == 'customer'">
+                    customer.name as groupField,
+                </when>
+                <when test="query.groupBy == 'user'">
+                    user.name as groupField,
+                </when>
+                <when test="query.groupBy == 'people'">
+                    people.name as groupField,
+                </when>
+                <otherwise>
+                    goods.name as groupField, <!-- 商品分组时，用商品名称作为groupField -->
+                </otherwise>
+            </choose>
+            goods.name as productName,
+        COALESCE(sell_info.attr, '') as attribute,
+            warehouse.name as warehouse,
+            goods.unit as unit,
+            sell_info.price as salesPrice,
+            sell_info.nums as salesCount,
+            sell_info.total as salesTotalPrice,
+            sre_info.price as returnPrice,
+            sre_info.nums as returnCount,
+            sre_info.total as returnTotalPrice
+        from
+            goods
+        left join  sell_info on goods.id = sell_info.goods
+        left join sell on sell.id = sell_info.pid
+        left join warehouse on sell_info.warehouse = warehouse.id
+        left join sre on sre.source = sell.id
+        left join sre_info on sre_info.pid = sre.id
+        left join customer on customer.id = sell.customer
+        left join people on people.id = sell.people
+        left join user on user.id = sell.user
+        <where>
+            <if test="query.productName != null and query.productName != ''">
+                AND goods.name LIKE CONCAT('%', #{query.productName}, '%')
+            </if>
+            <if test="query.warehouseId != null">
+                AND sell_info.warehouse = #{query.warehouseId}
+            </if>
+            <if test="query.startDate != null">
+                AND sell.time >= UNIX_TIMESTAMP(#{query.startDate})
+            </if>
+            <if test="query.endDate != null">
+                AND sell.time &lt;= UNIX_TIMESTAMP(#{query.endDate})
+            </if>
+
+            <if test="query.customerId != null">
+                AND sell.customer = #{query.customerId}
+            </if>
+            <if test="query.userId != null">
+                AND sell.user = #{query.userId}
+            </if>
+            <if test="query.peopleId != null">
+                AND sell.people = #{query.peopleId}
+            </if>
+        </where>
+        <choose>
+            <when test="query.groupBy != null">
+                ORDER BY groupField DESC
+            </when>
+            <otherwise>
+                ORDER BY goods.name DESC
+            </otherwise>
+        </choose>
+    </select>
+</mapper>

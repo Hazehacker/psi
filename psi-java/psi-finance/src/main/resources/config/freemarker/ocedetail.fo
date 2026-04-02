@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fo:root xmlns:fo="http://www.w3.org/1999/XSL/Format">
+    <!-- 页面模板定义 -->
+    <fo:layout-master-set>
+        <fo:simple-page-master master-name="A4" page-width="210mm" page-height="297mm" margin="20mm">
+            <fo:region-body/>
+        </fo:simple-page-master>
+    </fo:layout-master-set>
+
+    <!-- 页面内容 -->
+    <fo:page-sequence master-reference="A4">
+        <fo:flow flow-name="xsl-region-body">
+            <!-- 标题 -->
+            <fo:block font-family="微软雅黑" font-size="18pt" font-weight="bold" text-align="center" margin-bottom="10pt ">
+                单据详情
+            </fo:block>
+
+            <!-- 基本信息 -->
+            <fo:block font-family="微软雅黑" font-size="10pt" margin-bottom="10pt">
+                供应商：${supplier}　　
+                单据日期：${time}　　
+                单据编号：${pid}
+            </fo:block>
+
+            <!-- 明细表格 -->
+            <fo:table table-layout="fixed" width="100%" border="0.5pt solid #000" font-size="10pt" margin-bottom="10pt">
+                <fo:table-header>
+                    <fo:table-row background-color="#f0f0f0">
+                        <fo:table-cell border="0.5pt solid #000" padding="4pt"><fo:block font-family="微软雅黑">序号</fo:block></fo:table-cell>
+                        <fo:table-cell border="0.5pt solid #000" padding="4pt"><fo:block font-family="微软雅黑">支出类别</fo:block></fo:table-cell>
+                        <fo:table-cell border="0.5pt solid #000" padding="4pt"><fo:block font-family="微软雅黑">结算金额</fo:block></fo:table-cell>
+                        <fo:table-cell border="0.5pt solid #000" padding="4pt"><fo:block font-family="微软雅黑">备注信息</fo:block></fo:table-cell>
+                    </fo:table-row>
+                </fo:table-header>
+
+                <fo:table-body>
+                    <#list items as item>
+                        <fo:table-row>
+                            <!-- 序号：用 item?index 从 0 开始，加 1 -->
+                            <fo:table-cell border="0.5pt solid #000" padding="4pt">
+                                <fo:block font-family="微软雅黑">${item?index + 1}</fo:block>
+                            </fo:table-cell>
+
+                            <!-- 支出类别：ietName -->
+                            <fo:table-cell border="0.5pt solid #000" padding="4pt">
+                                <fo:block font-family="微软雅黑">${item.ietName!''}</fo:block>
+                            </fo:table-cell>
+
+                            <!-- 结算金额：money -->
+                            <fo:table-cell border="0.5pt solid #000" padding="4pt">
+                                <fo:block font-family="微软雅黑">${item.money!0}</fo:block>
+                            </fo:table-cell>
+
+                            <!-- 备注信息：data -->
+                            <fo:table-cell border="0.5pt solid #000" padding="4pt">
+                                <fo:block font-family="微软雅黑">${item.data!''}</fo:block>
+                            </fo:table-cell>
+                        </fo:table-row>
+                    </#list>
+                </fo:table-body>
+
+            </fo:table>
+
+            <!-- 汇总信息 -->
+            <fo:block font-family="微软雅黑" font-size="10pt">
+                总条数：${items?size}　总金额：${total}
+            </fo:block>
+
+            <fo:block font-family="微软雅黑" font-size="10pt" margin-top="4pt">
+                单据金额：${total}　实际金额：${actual}　实付金额：${money}
+            </fo:block>
+
+            <fo:block font-family="微软雅黑" font-size="10pt" margin-top="4pt">
+                结算账户：${account}　关联人员：${people}
+            </fo:block>
+
+            <fo:block font-family="微软雅黑" font-size="10pt" margin-top="4pt">
+                备注信息：${data}
+            </fo:block>
+
+            <!-- 已审核印章 -->
+            <fo:block font-family="微软雅黑" text-align="end" color="red" font-weight="bold" font-size="16pt" margin-top="30pt">
+                已审核
+            </fo:block>
+
+        </fo:flow>
+    </fo:page-sequence>
+</fo:root>

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.zeroone.star</groupId>
+        <artifactId>psi-java</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+
+    <artifactId>psi-supportinfo</artifactId>
+
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <dependencies>
+
+        <!-- spring mvc -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- common -->
+        <dependency>
+            <groupId>com.zeroone.star</groupId>
+            <artifactId>psi-common</artifactId>
+        </dependency>
+        <!-- apis -->
+        <dependency>
+            <groupId>com.zeroone.star</groupId>
+            <artifactId>psi-apis</artifactId>
+        </dependency>
+        <!-- alibaba nacos discovery -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+        <!-- alibaba nacos config -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zeroone.star</groupId>
+            <artifactId>psi-domain</artifactId>
+        </dependency>
+        <!-- ZXing barcode generator -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>3.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>3.5.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-generator</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
+        </dependency>
+
+        <!--数据库相关-->
+        <!--mybatis-plus-->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-boot-starter</artifactId>
+        </dependency>
+        <!--数据源-->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid-spring-boot-starter</artifactId>
+        </dependency>
+        <!--数据库驱动-->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
+        <!---->
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+        </dependency>
+
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.zeroone.star.supportinfo.SupportinfoTestApplication</mainClass>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <configuration>
+                    <dockerHost>https://115.29.140.172:2375</dockerHost>
+                    <!--                    <certPath>/home/docker-ca</certPath>-->
+                    <certPath>D:\a01java\supportinfo</certPath>
+                    <images>
+                        <image>
+                            <name>01star/${project.artifactId}/test5:${project.version}</name>
+                            <build>
+                                <contextDir>${project.basedir}</contextDir>
+                            </build>
+                            <alias>${project.artifactId}</alias>
+                            <run>
+                                <namingStrategy>alias</namingStrategy>
+                                <ports>
+                                    <port>18501:18501</port>
+                                </ports>
+
+
+                                <volumes>
+                                    <bind>
+                                        <volume>/etc/localtime:/etc/localtime</volume>
+                                        <volume>/home/app/${project.artifactId}/logs:/tmp/logs</volume>
+                                    </bind>
+                                </volumes>
+                                <env>
+                                    <JAVA_OPTS>-Xms256m -Xmx256m</JAVA_OPTS>
+                                    <SPRING_ARGS>
+                                        --spring.profiles.active=test --spring.cloud.nacos.discovery.ip=115.29.140.172
+                                    </SPRING_ARGS>
+                                </env>
+                            </run>
+                        </image>
+                    </images>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

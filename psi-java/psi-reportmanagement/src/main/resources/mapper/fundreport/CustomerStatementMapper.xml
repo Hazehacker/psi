@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.fundreport.CustomerStatementMapper">
+
+    <!-- 主查询 -->
+    <select id="selectCustomerStatementMain"
+            resultMap="CustomerStatementMap">
+        select
+        '销售单' as table_type,
+        frame,
+        time,
+        number,
+        total,
+        (actual - money) as discount_amount,
+        actual,
+        money,
+        actual,
+        data,
+        id
+        from sell
+        <where>
+            customer like #{name}
+            and time between #{beginTime} and #{endTime}
+        </where>
+        union all
+        select
+        '销售退货单' as table_type,
+        frame,
+        time,
+        number,
+        total,
+        (actual - money) as discount_amount,
+        actual,
+        money,
+        actual,
+        data,
+        id
+        from sre
+        <where>
+            customer like #{name}
+            and time between #{beginTime} and #{endTime}
+        </where>
+        union all
+        select
+        '销售订单' as table_type,
+        frame,
+        time,
+        number,
+        total,
+        null as discount_amount,
+        actual,
+        null as money,
+        actual,
+        data,
+        id
+        from sor
+        <where>
+            customer like #{name}
+            and time between #{beginTime} and #{endTime}
+        </where>
+    </select>
+
+    <!-- 结果映射 -->
+    <resultMap id="CustomerStatementMap"
+               type="com.zeroone.star.project.dto.j5.fundreport.CustomerStatementMainDTO">
+        <result property="tableType" column="table_type"/>
+        <result property="frame" column="frame"/>
+        <result property="time" column="time"/>
+        <result property="number" column="number"/>
+        <result property="total" column="total"/>
+        <result property="discountAmount" column="discount_amount"/>
+        <result property="actual" column="actual"/>
+        <result property="money" column="money"/>
+        <result property="actual2" column="actual"/>
+        <result property="data" column="data"/>
+
+        <collection property="details"
+                    ofType="com.zeroone.star.project.dto.j5.fundreport.CustomerStatementDetailDTO"
+                    column="{mainId=id,tableType=table_type}"
+                    select="selectDetailsByMain"/>
+    </resultMap>
+
+    <!-- 子查询 -->
+    <select id="selectDetailsByMain"
+            resultType="com.zeroone.star.project.dto.j5.fundreport.CustomerStatementDetailDTO">
+        <choose>
+            <when test="tableType == '销售单'">
+                select goods, price, nums
+                from sell_info
+                where pid = #{mainId}
+            </when>
+            <when test="tableType == '销售退货单'">
+                select goods, price, nums
+                from sre_info
+                where pid = #{mainId}
+            </when>
+            <when test="tableType == '销售订单'">
+                select goods, price, nums
+                from sor_info
+                where pid = #{mainId}
+            </when>
+        </choose>
+    </select>
+</mapper>

@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.procurementreport.ProcurementDetailFormMapper">
+    <select id="selectProcurementDetailForm"
+            resultType="com.zeroone.star.project.dto.j5.procurementreport.ProcurementDetailFromDTO">
+        SELECT
+        t.attr as attr,
+        t.data as data,
+        t.dsc as dsc,
+        t.nums as nums,
+        t.price as price,
+        t.tat as tat,
+        t.total as total,
+        t.tpt as tpt,
+        t.unit as unit,
+        t.warehouse as warehouse,
+        t.name as name,
+        t.supplier as supplier,
+        t.time as time,
+        t.number as number,
+        t.type as type
+        FROM (
+        -- 1. 采购出库（type = 1）
+        SELECT
+        bi.attr, bi.data, bi.dsc, bi.nums, bi.price, bi.tat,
+        bi.total, bi.tpt, bi.unit, bi.warehouse,
+        g.name AS name,
+        bor.supplier, bor.time, bor.number,
+        1 AS type
+        FROM bor_info bi
+        LEFT JOIN goods g ON bi.goods = g.id
+        LEFT JOIN bor ON bi.pid = bor.id
+        <where>
+            <if test="query.startTime != null">
+                AND bor.time <![CDATA[ >= ]]> #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND bor.time <![CDATA[ <= ]]> #{query.endTime}
+            </if>
+            <if test="query.supplier != null and query.supplier != ''">
+                AND bor.supplier = #{query.supplier}
+            </if>
+            <if test="query.number != null and query.number != ''">
+                AND bor.number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.warehouse != null and query.warehouse != ''">
+                AND bi.warehouse = #{query.warehouse}
+            </if>
+            <if test="query.name != null and query.name != ''">
+                AND g.name LIKE CONCAT('%', #{query.name}, '%')
+            </if>
+            <if test="query.data != null and query.data != ''">
+                AND bi.data LIKE CONCAT('%', #{query.data}, '%')
+            </if>
+        </where>
+        UNION ALL
+        -- 2. 采购退货（type = 0）
+        SELECT
+        brei.attr, brei.data, brei.dsc, brei.nums, brei.price, brei.tat,
+        brei.total, brei.tpt, brei.unit, brei.warehouse,
+        g.name AS name,
+        bre.supplier, bre.time, bre.number,
+        0 AS type
+        FROM bre_info brei
+        LEFT JOIN goods g ON brei.goods = g.id
+        LEFT JOIN bre ON brei.pid = bre.id
+        <where>
+            <if test="query.startTime != null">
+                AND bre.time <![CDATA[ >= ]]> #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND bre.time <![CDATA[ <= ]]> #{query.endTime}
+            </if>
+            <if test="query.supplier != null and query.supplier != ''">
+                AND bre.supplier = #{query.supplier}
+            </if>
+            <if test="query.number != null and query.number != ''">
+                AND bre.number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.warehouse != null and query.warehouse != ''">
+                AND brei.warehouse = #{query.warehouse}
+            </if>
+            <if test="query.name != null and query.name != ''">
+                AND g.name LIKE CONCAT('%', #{query.name}, '%')
+            </if>
+            <if test="query.data != null and query.data != ''">
+                AND brei.data LIKE CONCAT('%', #{query.data}, '%')
+            </if>
+        </where>
+        ) t
+        <where>
+            <if test="query.type != null">
+                AND t.type = #{query.type}
+            </if>
+        </where>
+        ORDER BY t.time DESC
+    </select>
+
+    <!-- Excel 导出查询 -->
+    <select id="selectAllForExport"
+            resultType="com.zeroone.star.project.dto.j5.procurementreport.ProcurementDetailFromDTO">
+        SELECT
+        t.attr as attr,
+        t.data as data,
+        t.dsc as dsc,
+        t.nums as nums,
+        t.price as price,
+        t.tat as tat,
+        t.total as total,
+        t.tpt as tpt,
+        t.unit as unit,
+        t.warehouse as warehouse,
+        t.name as name,
+        t.supplier as supplier,
+        t.time as time,
+        t.number as number,
+        t.type as type
+        FROM (
+        -- 1. 采购出库（type = 1）
+        SELECT
+        bi.attr, bi.data, bi.dsc, bi.nums, bi.price, bi.tat,
+        bi.total, bi.tpt, bi.unit, bi.warehouse,
+        g.name AS name,
+        bor.supplier, bor.time, bor.number,
+        1 AS type
+        FROM bor_info bi
+        LEFT JOIN goods g ON bi.goods = g.id
+        LEFT JOIN bor ON bi.pid = bor.id
+        <where>
+            <if test="query.startTime != null">
+                AND bor.time <![CDATA[ >= ]]> #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND bor.time <![CDATA[ <= ]]> #{query.endTime}
+            </if>
+            <if test="query.supplier != null and query.supplier != ''">
+                AND bor.supplier = #{query.supplier}
+            </if>
+            <if test="query.number != null and query.number != ''">
+                AND bor.number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.warehouse != null and query.warehouse != ''">
+                AND bi.warehouse = #{query.warehouse}
+            </if>
+            <if test="query.name != null and query.name != ''">
+                AND g.name LIKE CONCAT('%', #{query.name}, '%')
+            </if>
+            <if test="query.data != null and query.data != ''">
+                AND bi.data LIKE CONCAT('%', #{query.data}, '%')
+            </if>
+        </where>
+        UNION ALL
+        -- 2. 采购退货（type = 0）
+        SELECT
+        brei.attr, brei.data, brei.dsc, brei.nums, brei.price, brei.tat,
+        brei.total, brei.tpt, brei.unit, brei.warehouse,
+        g.name AS name,
+        bre.supplier, bre.time, bre.number,
+        0 AS type
+        FROM bre_info brei
+        LEFT JOIN goods g ON brei.goods = g.id
+        LEFT JOIN bre ON brei.pid = bre.id
+        <where>
+            <if test="query.startTime != null">
+                AND bre.time <![CDATA[ >= ]]> #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND bre.time <![CDATA[ <= ]]> #{query.endTime}
+            </if>
+            <if test="query.supplier != null and query.supplier != ''">
+                AND bre.supplier = #{query.supplier}
+            </if>
+            <if test="query.number != null and query.number != ''">
+                AND bre.number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.warehouse != null and query.warehouse != ''">
+                AND brei.warehouse = #{query.warehouse}
+            </if>
+            <if test="query.name != null and query.name != ''">
+                AND g.name LIKE CONCAT('%', #{query.name}, '%')
+            </if>
+            <if test="query.data != null and query.data != ''">
+                AND brei.data LIKE CONCAT('%', #{query.data}, '%')
+            </if>
+        </where>
+        ) t
+        <where>
+            <if test="query.type != null">
+                AND t.type = #{query.type}
+            </if>
+        </where>
+        ORDER BY t.time DESC
+    </select>
+</mapper>

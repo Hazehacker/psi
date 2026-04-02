@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.storemanagement.mapper.InventoryMapper">
+    <!-- 查询子类别ID -->
+    <select id="selectChildCategoryIds" resultType="java.lang.String">
+        SELECT CAST(id AS CHAR) as id FROM category WHERE pid = #{parentId}
+    </select>
+
+    <!--查询商品的基本信息-->
+    <select id="selectInventoryBaseList" resultType="com.zeroone.star.project.dto.j2.store.InventoryListDTO">
+        SELECT
+            g.id,
+            g.name,
+            g.threshold,
+            g.stock,
+            g.number,
+            g.spec,
+            g.brand,
+            g.unit,
+            g.code,
+            g.`data` as remark,
+            c.id as "categoryId",
+            c.name as "categoryName",
+            <!-- 使用子查询计算总库存 -->
+            COALESCE((
+                SELECT SUM(r2.nums)
+                FROM room r2
+                WHERE r2.goods = g.id
+                <if test="query.warehouseId != null and query.warehouseId.size() > 0">
+                    AND r2.warehouse IN
+                    <foreach collection="query.warehouseId" item="id" open="(" close=")" separator=",">
+                        #{id}
+                    </foreach>
+                </if>
+            ), 0) as totalStock
+        FROM goods g
+        LEFT JOIN category c ON g.category = c.id
+        <!--查询条件-->
+        <where>
+            <if test="query.goodsName != null and query.goodsName != ''">
+                AND g.name LIKE CONCAT('%', #{query.goodsName},'%')
+            </if>
+            <if test="query.goodsNumber != null and query.goodsNumber != ''">
+                AND g.number LIKE CONCAT('%', #{query.goodsNumber},'%')
+            </if>
+            <if test="query.goodsSpec != null and query.goodsSpec != ''">
+                AND g.spec LIKE CONCAT('%',#{query.goodsSpec},'%')
+            </if>
+            <if test="query.goodsCategoryIds != null and query.goodsCategoryIds.size() > 0">
+                AND g.category IN
+                <foreach collection="query.goodsCategoryIds" item="categoryId" open="(" close=")" separator=",">
+                    #{categoryId}
+                </foreach>
+            </if>
+            <if test="query.goodsBrand != null and query.goodsBrand != ''">
+                AND g.brand = #{query.goodsBrand}
+            </if>
+            <if test="query.goodsCode != null and query.goodsCode != ''">
+                AND g.code LIKE CONCAT('%',#{query.goodsCode},'%')
+            </if>
+            <if test="query.goodsRemark != null and query.goodsRemark != ''">
+                AND g.data LIKE CONCAT('%',#{query.goodsRemark},'%')
+            </if>
+        </where>
+        ORDER BY g.id DESC
+    </select>
+
+    <!-- 查询属性基本信息 -->
+    <select id="selectAttrStockByGoodsIds" resultType="com.zeroone.star.project.dto.j2.store.AttrStockDTO">
+        SELECT
+            a.id as attrId,
+            a.name as attrName,
+            a.pid as pid
+        FROM attr a
+        WHERE a.pid IN
+        <foreach collection="goodsIds" item="goodsId" open="(" close=")" separator=",">
+            #{goodsId}
+        </foreach>
+    </select>
+
+    <!-- 查询库存信息 -->
+    <select id="selectWarehouseStockByGoodsIds" resultType="com.zeroone.star.project.dto.j2.store.WarehouseStockDTO">
+        SELECT
+            r.id as storedRecordId,
+            r.warehouse as warehouseId,
+            w.name as warehouseName,
+            r.goods as goodsId,
+            COALESCE(a.id, '') as attrId,  <!-- a.id -->
+            r.nums as stockNum
+        FROM room r
+        LEFT JOIN warehouse w ON r.warehouse = w.id
+        LEFT JOIN attr a ON r.attr = a.name AND r.goods = a.pid
+        WHERE r.goods IN
+        <foreach collection="goodsIds" item="goodsId" open="(" close=")" separator=",">
+            #{goodsId}
+        </foreach>
+        <if test="warehouseIds != null and warehouseIds.size() > 0">
+            AND r.warehouse IN
+            <foreach collection="warehouseIds" item="warehouseId" open="(" close=")" separator=",">
+                #{warehouseId}
+            </foreach>
+        </if>
+    </select>
+
+</mapper>

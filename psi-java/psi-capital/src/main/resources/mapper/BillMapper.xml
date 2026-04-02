@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.capital.mapper.BillMapper">
+    <select id="listPendingWriteOff00"
+            resultType="com.zeroone.star.project.dto.j3.capital.VerificationSheetPendingBillOffDTO">
+        SELECT
+        bi.frame,
+        bi.time,
+        bi.number,
+        bu.nucleus,
+        bu.total,
+        bf.money,
+        COALESCE(bf.money,0) as money,
+        bi.people,
+        bi.user,
+        bi.data
+        FROM
+        bill bi
+        INNER JOIN buy bu ON bi.number=bu.number
+        INNER JOIN imy_bill bf ON bi.id=bf.pid
+        <where>
+            AND #{query.type2}=0
+            <if test="query.number != null and query.number != '' and query.number.trim()!=''">
+                bi.number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.nucleus != null">
+                AND bu.nucleus = #{query.nucleus}
+            </if>
+            <if test="query.startTime != null ">
+                AND bi.time &gt;= #{query.startTime}
+            </if>
+            <if test="query.endTime != null ">
+                AND bi.time &lt;= #{query.endTime}
+            </if>
+            <if test="query.user != null and query.user != '' and query.user.trim()!=''">
+                AND bi.user LIKE CONCAT('%', #{query.user}, '%')
+            </if>
+            <if test="query.data != null and query.data != '' and query.data.trim()!=''">
+                AND bi.data LIKE CONCAT('%', #{query.data}, '%')
+            </if>
+        </where>
+        ORDER BY bi.time DESC
+    </select>
+    <select id="listPendingWriteOff01"
+            resultType="com.zeroone.star.project.dto.j3.capital.VerificationSheetPendingBillOffDTO">
+        SELECT
+        bi.frame,
+        bi.time,
+        bi.number,
+        bu.nucleus,
+        bu.total,
+        bf.money,
+        COALESCE(bf.money,0) as money,
+        bi.people,
+        bi.user,
+        bi.data
+        FROM
+        bill bi
+        INNER JOIN buy bu ON bi.number=bu.number
+        INNER JOIN sell_bill bf ON bi.id=bf.pid
+        <where>
+            AND #{query.type2}=1
+            <if test="query.number != null and query.number != '' and query.number.trim()!=''">
+                bi.number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.nucleus != null">
+                AND bu.nucleus = #{query.nucleus}
+            </if>
+            <if test="query.startTime != null ">
+                AND bi.time &gt;= #{query.startTime}
+            </if>
+            <if test="query.endTime != null ">
+                AND bi.time &lt;= #{query.endTime}
+            </if>
+            <if test="query.user != null and query.user != '' and query.user.trim()!=''">
+                AND bi.user LIKE CONCAT('%', #{query.user}, '%')
+            </if>
+            <if test="query.data != null and query.data != '' and query.data.trim()!=''">
+                AND bi.data LIKE CONCAT('%', #{query.data}, '%')
+            </if>
+        </where>
+        ORDER BY bi.time DESC
+    </select>
+    <select id="listPendingWriteOff02"
+            resultType="com.zeroone.star.project.dto.j3.capital.VerificationSheetPendingBillOffDTO">
+        SELECT
+        bi.frame,
+        bi.time,
+        bi.number,
+        bu.nucleus,
+        bu.total,
+        bf.money,
+        COALESCE(bf.money,0) as money,
+        bi.people,
+        bi.user,
+        bi.data
+        FROM
+        bill bi
+        INNER JOIN buy bu ON bi.number=bu.number
+        INNER JOIN sre_bill bf ON bi.id=bf.pid
+        <where>
+            AND #{query.type2}=2
+            <if test="query.number != null and query.number != '' and query.number.trim()!=''">
+                bi.number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.nucleus != null">
+                AND bu.nucleus = #{query.nucleus}
+            </if>
+            <if test="query.startTime != null ">
+                AND bi.time &gt;= #{query.startTime}
+            </if>
+            <if test="query.endTime != null ">
+                AND bi.time &lt;= #{query.endTime}
+            </if>
+            <if test="query.user != null and query.user != '' and query.user.trim()!=''">
+                AND bi.user LIKE CONCAT('%', #{query.user}, '%')
+            </if>
+            <if test="query.data != null and query.data != '' and query.data.trim()!=''">
+                AND bi.data LIKE CONCAT('%', #{query.data}, '%')
+            </if>
+        </where>
+        ORDER BY bi.time DESC
+    </select>
+    <select id="listPendingWriteOff03"
+            resultType="com.zeroone.star.project.dto.j3.capital.VerificationSheetPendingBillOffDTO">
+        SELECT
+        bi.frame,
+        bi.time,
+        bi.number,
+        bu.nucleus,
+        bu.total,
+        bf.money,
+        COALESCE(bf.money,0) as money,
+        bi.people,
+        bi.user,
+        bi.data
+        FROM
+        bill bi
+        INNER JOIN buy bu ON bi.number=bu.number
+        INNER JOIN ice_bill bf ON bi.id=bf.pid
+        <where>
+            AND #{query.type2}=3
+            <if test="query.number != null and query.number != '' and query.number.trim()!=''">
+                bi.number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.nucleus != null">
+                AND bu.nucleus = #{query.nucleus}
+            </if>
+            <if test="query.startTime != null ">
+                AND bi.time &gt;= #{query.startTime}
+            </if>
+            <if test="query.endTime != null ">
+                AND bi.time &lt;= #{query.endTime}
+            </if>
+            <if test="query.user != null and query.user != '' and query.user.trim()!=''">
+                AND bi.user LIKE CONCAT('%', #{query.user}, '%')
+            </if>
+            <if test="query.data != null and query.data != '' and query.data.trim()!=''">
+                AND bi.data LIKE CONCAT('%', #{query.data}, '%')
+            </if>
+        </where>
+        ORDER BY bi.time DESC
+    </select>
+    <select id="listWrittenOff"
+            resultType="com.zeroone.star.project.dto.j3.capital.VerificationSheetBillWrittenDTO">
+        SELECT
+        b.frame,
+        b.customer,
+        b.supplier,
+        b.time,
+        b.number,
+        bi.bill,
+        bi.money,
+        b.people,
+        b.examine,
+        b.user,
+        b.data
+        FROM bill b
+        INNER JOIN bill_info bi on b.id=bi.pid
+        <where>
+            <if test="query.customer!=null and query.customer!='' and query.customer.trim() != ''">
+                AND b.customer LIKE CONCAT('%', #{query.customer}, '%')
+            </if>
+            <if test="query.supplier!=null and query.supplier!='' and query.supplier.trim() != ''">
+                AND b.supplier LIKE CONCAT('%', #{query.supplier}, '%')
+            </if>
+            <if test="query.number!=null and query.number!='' and query.number.trim() != ''">
+                AND b.number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.type!=null">
+                AND b.type=#{query.type}
+            </if>
+            <if test="query.startTime!=null">
+                AND b.time &gt;= #{query.startTime}
+            </if>
+            <if test="query.endTime!=null">
+                AND b.time &lt;= #{query.endTime}
+            </if>
+            <if test="query.user!=null and query.user!='' and query.user.trim() != ''">
+                AND b.user LIKE CONCAT('%', #{query.user}, '%')
+            </if>
+            <if test="query.people!=null and query.people!='' and query.people.trim() != ''">
+                AND b.people LIKE CONCAT('%', #{query.people}, '%')
+            </if>
+            <if test="query.examine!=null">
+                AND b.examine=#{query.examine}
+            </if>
+            <if test="query.data!=null and query.data!='' and query.data.trim() != ''">
+                AND b.data LIKE CONCAT('%', #{query.data}, '%')
+            </if>
+        </where>
+        ORDER BY b.time DESC
+    </select>
+</mapper>

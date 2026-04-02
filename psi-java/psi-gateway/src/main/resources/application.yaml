@@ -1,0 +1,29 @@
+server:
+  port: ${sp.gateway}
+spring:
+  application:
+    name: ${sn.gateway}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # 公钥文件配置
+          public-key-location: classpath:public.pem
+zo:
+  cloud:
+    starter:
+      gateway:
+        # 配置是否开启鉴权
+        open-authorization: true
+        # 配置白名单路径
+        white-paths:
+          - "/actuator/**"
+          - "/captcha/**"
+          - "/auth/oauth/token"
+          - "/login/auth-login"
+          - "/login/refresh-token"
+        # 配置内部路径(需要用到凭证但不需要权限验证的请求)
+        inner-paths:
+          - "/login/current-user"
+          - "/login/get-menus"
+          - "/login/logout"

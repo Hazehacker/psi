@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.homepage.mapper.SellInfoMapper">
+    <select id="selectDailySales" resultType="com.zeroone.star.project.dto.j1.homepage.DailySalesStats">
+        SELECT
+            DATE(time) AS salesDate,
+            COUNT(id) AS dailySalesQuantity,
+            SUM(total) AS dailySalesAmount
+        FROM sell
+        WHERE DATE(time) = #{today} AND examine = 1
+        GROUP BY DATE(time)
+    </select>
+
+    <select id="getDailyGrossAmount" resultType="BigDecimal">
+        SELECT SUM(s.total - g.buy * si.nums)
+        FROM sell as s
+        JOIN sell_info as si on s.id = si.pid
+        LEFT JOIN goods as g on si.goods = g.id
+        WHERE si.mfd = #{today} AND s.examine = 1
+    </select>
+</mapper>

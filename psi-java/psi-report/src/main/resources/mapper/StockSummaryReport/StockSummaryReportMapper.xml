@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.report.mapper.StockSummaryReport.StockSummaryReportMapper">
+
+    <!-- 主列表：商品 × 仓库（分页） -->
+    <select id="findGoods" resultMap="StockSummaryReportMap">
+        SELECT
+        MIN(g.name) AS name,
+        MIN(g.number) AS goodsNo,
+        MIN(g.spec) AS spec,
+        MIN(g.unit) AS unit,
+        s.warehouse AS warehouseNumber, -- 传子查询
+        MIN(w.name) AS warehouseName, -- 展示
+        s.goods AS gid, -- 传子查询
+        #{q.startTime} AS startTime,
+        #{q.endTime} AS endTime
+        FROM summary s
+        JOIN goods g ON g.id = s.goods
+        JOIN warehouse w ON w.id = s.warehouse
+        <where>
+            <if test="q.goods != null and q.goods != ''">
+                AND g.name LIKE CONCAT('%', #{q.goods}, '%')
+            </if>
+            <if test="q.startTime != null">
+                AND s.time &gt;= #{q.startTime}
+            </if>
+            <if test="q.endTime != null">
+                AND s.time &lt; DATE_ADD(#{q.endTime}, INTERVAL 1 DAY)
+            </if>
+            <if test="q.warehouse != null and q.warehouse.size > 0">
+                AND s.warehouse IN
+                <foreach collection="q.warehouse" item="wid" open="(" separator="," close=")">
+                    #{wid}
+                </foreach>
+            </if>
+        </where>
+        GROUP BY s.goods, s.warehouse
+        ORDER BY MIN(g.name) ASC, MIN(w.name) ASC
+    </select>
+
+
+    <!-- 采购 -->
+    <select id="findBuyByGoods" parameterType="map"
+            resultType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.BuyDTO">
+        SELECT
+        CASE WHEN SUM(s.nums)=0 THEN NULL ELSE ROUND(SUM(s.bct)/SUM(s.nums),4) END AS price,
+        SUM(s.nums) AS nums,
+        SUM(s.bct) AS total
+        FROM summary s
+        <where>
+            s.goods = #{goodsId}
+            AND s.warehouse = #{warehouseId}
+            AND s.type = 'buy'
+            <if test="startTime != null">AND s.time &gt;= #{startTime}</if>
+            <if test="endTime != null">AND s.time &lt; DATE_ADD(#{endTime}, INTERVAL 1 DAY)</if>
+        </where>
+    </select>
+
+    <!-- 采购退货 -->
+    <select id="findBreByGoods" parameterType="map"
+            resultType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.BreDTO">
+        SELECT
+        CASE WHEN SUM(s.nums)=0 THEN NULL ELSE ROUND(SUM(s.bct)/SUM(s.nums),4) END AS price,
+        SUM(s.nums) AS nums,
+        SUM(s.bct) AS total
+        FROM summary s
+        <where>
+            s.goods = #{goodsId}
+            AND s.warehouse = #{warehouseId}
+            AND s.type = 'bre'
+            <if test="startTime != null">AND s.time &gt;= #{startTime}</if>
+            <if test="endTime != null">AND s.time &lt; DATE_ADD(#{endTime}, INTERVAL 1 DAY)</if>
+        </where>
+    </select>
+
+    <!-- 销售 -->
+    <select id="findSellByGoods" parameterType="map"
+            resultType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.SellDTO">
+        SELECT
+        CASE WHEN SUM(s.nums)=0 THEN NULL ELSE ROUND(SUM(s.bct)/SUM(s.nums),4) END AS price,
+        SUM(s.nums) AS nums,
+        SUM(s.bct) AS total
+        FROM summary s
+        <where>
+            s.goods = #{goodsId}
+            AND s.warehouse = #{warehouseId}
+            AND s.type = 'sell'
+            <if test="startTime != null">AND s.time &gt;= #{startTime}</if>
+            <if test="endTime != null">AND s.time &lt; DATE_ADD(#{endTime}, INTERVAL 1 DAY)</if>
+        </where>
+    </select>
+
+    <!-- 销售退货 -->
+    <select id="findSreByGoods" parameterType="map"
+            resultType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.SreDTO">
+        SELECT
+        CASE WHEN SUM(s.nums)=0 THEN NULL ELSE ROUND(SUM(s.bct)/SUM(s.nums),4) END AS price,
+        SUM(s.nums) AS nums,
+        SUM(s.bct) AS total
+        FROM summary s
+        <where>
+            s.goods = #{goodsId}
+            AND s.warehouse = #{warehouseId}
+            AND s.type = 'sre'
+            <if test="startTime != null">AND s.time &gt;= #{startTime}</if>
+            <if test="endTime != null">AND s.time &lt; DATE_ADD(#{endTime}, INTERVAL 1 DAY)</if>
+        </where>
+    </select>
+
+    <!-- 其它入库 -->
+    <select id="findEntryByGoods" parameterType="map"
+            resultType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.EntryDTO">
+        SELECT
+        CASE WHEN SUM(s.nums)=0 THEN NULL ELSE ROUND(SUM(s.bct)/SUM(s.nums),4) END AS price,
+        SUM(s.nums) AS nums,
+        SUM(s.bct) AS total
+        FROM summary s
+        <where>
+            s.goods = #{goodsId}
+            AND s.warehouse = #{warehouseId}
+            AND s.type = 'entry'
+            <if test="startTime != null">AND s.time &gt;= #{startTime}</if>
+            <if test="endTime != null">AND s.time &lt; DATE_ADD(#{endTime}, INTERVAL 1 DAY)</if>
+        </where>
+    </select>
+
+    <!-- 其它出库 -->
+    <select id="findExtryByGoods" parameterType="map"
+            resultType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.ExtryDTO">
+        SELECT
+        CASE WHEN SUM(s.nums)=0 THEN NULL ELSE ROUND(SUM(s.bct)/SUM(s.nums),4) END AS price,
+        SUM(s.nums) AS nums,
+        SUM(s.bct) AS total
+        FROM summary s
+        <where>
+            s.goods = #{goodsId}
+            AND s.warehouse = #{warehouseId}
+            AND s.type = 'extry'
+            <if test="startTime != null">AND s.time &gt;= #{startTime}</if>
+            <if test="endTime != null">AND s.time &lt; DATE_ADD(#{endTime}, INTERVAL 1 DAY)</if>
+        </where>
+    </select>
+
+    <!-- 调拨入（direction=1） -->
+    <select id="findSwapStorehouseByGoods" parameterType="map"
+            resultType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.SwapStorehouseDTO">
+        SELECT
+        CASE WHEN SUM(s.nums)=0 THEN NULL ELSE ROUND(SUM(s.bct)/SUM(s.nums),4) END AS price,
+        SUM(s.nums) AS nums,
+        SUM(s.bct) AS total
+        FROM summary s
+        <where>
+            s.goods = #{goodsId}
+            AND s.warehouse = #{warehouseId}
+            AND s.type = 'swap'
+            AND s.direction = 1
+            <if test="startTime != null">AND s.time &gt;= #{startTime}</if>
+            <if test="endTime != null">AND s.time &lt; DATE_ADD(#{endTime}, INTERVAL 1 DAY)</if>
+        </where>
+    </select>
+
+    <!-- 调拨出（direction=0） -->
+    <select id="findSwapWarehouseByGoods" parameterType="map"
+            resultType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.SwapWarehouseDTO">
+        SELECT
+        CASE WHEN SUM(s.nums)=0 THEN NULL ELSE ROUND(SUM(s.bct)/SUM(s.nums),4) END AS price,
+        SUM(s.nums) AS nums,
+        SUM(s.bct) AS total
+        FROM summary s
+        <where>
+            s.goods = #{goodsId}
+            AND s.warehouse = #{warehouseId}
+            AND s.type = 'swap'
+            AND s.direction = 0
+            <if test="startTime != null">AND s.time &gt;= #{startTime}</if>
+            <if test="endTime != null">AND s.time &lt; DATE_ADD(#{endTime}, INTERVAL 1 DAY)</if>
+        </where>
+    </select>
+
+    <!-- 期初（按 room + room_info 聚合；无时间） -->
+    <select id="findRoomByGoods" parameterType="map"
+            resultType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.RoomDTO">
+        SELECT
+        CASE WHEN SUM(ri.nums)=0 THEN NULL ELSE ROUND(SUM(ri.price*ri.nums)/SUM(ri.nums),4) END AS price,
+        SUM(ri.nums) AS nums,
+        SUM(ri.price*ri.nums) AS total
+        FROM room r
+        JOIN room_info ri ON ri.pid = r.id
+        <where>
+            r.goods = #{goodsId}
+            AND r.warehouse = #{warehouseId}
+        </where>
+    </select>
+
+    <!-- 不分页导出用 -->
+    <select id="findGoodsAll" resultMap="StockSummaryReportMap">
+        SELECT
+        MIN(g.name) AS name,
+        MIN(g.number) AS goodsNo,
+        MIN(g.spec) AS spec,
+        MIN(g.unit) AS unit,
+        s.warehouse AS warehouseNumber,
+        MIN(w.name) AS warehouseName,
+        s.goods AS gid,
+        #{q.startTime} AS startTime,
+        #{q.endTime} AS endTime
+        FROM summary s
+        JOIN goods g ON g.id = s.goods
+        JOIN warehouse w ON w.id = s.warehouse
+        <where>
+            <if test="q.goods != null and q.goods != ''">
+                AND g.name LIKE CONCAT('%', #{q.goods}, '%')
+            </if>
+            <if test="q.startTime != null">
+                AND s.time &gt;= #{q.startTime}
+            </if>
+            <if test="q.endTime != null">
+                AND s.time &lt; DATE_ADD(#{q.endTime}, INTERVAL 1 DAY)
+            </if>
+            <if test="q.warehouse != null and q.warehouse.size > 0">
+                AND s.warehouse IN
+                <foreach collection="q.warehouse" item="wid" open="(" separator="," close=")">
+                    #{wid}
+                </foreach>
+            </if>
+        </where>
+        GROUP BY s.goods, s.warehouse
+        ORDER BY MIN(g.name) ASC, MIN(w.name) ASC
+    </select>
+
+
+    <!-- 结果映射：把展示列映射到 DTO，并触发各子查询 -->
+    <resultMap id="StockSummaryReportMap"
+               type="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.StockSummaryReportDTO">
+        <result property="name" column="name"/>
+        <result property="number" column="goodsNo"/>
+        <result property="spec" column="spec"/>
+        <result property="unit" column="unit"/>
+        <result property="warehouseNumber" column="warehouseNumber"/>
+        <result property="warehouse" column="warehouseName"/>
+
+        <!-- 通过列传参给子查询：goodsId/warehouseId/startTime/endTime -->
+        <association property="buyDTO"
+                     column="{goodsId=gid, warehouseId=warehouseNumber, startTime=startTime, endTime=endTime}"
+                     javaType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.BuyDTO" select="findBuyByGoods"/>
+        <association property="breDTO"
+                     column="{goodsId=gid, warehouseId=warehouseNumber, startTime=startTime, endTime=endTime}"
+                     javaType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.BreDTO" select="findBreByGoods"/>
+        <association property="sellDTO"
+                     column="{goodsId=gid, warehouseId=warehouseNumber, startTime=startTime, endTime=endTime}"
+                     javaType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.SellDTO"
+                     select="findSellByGoods"/>
+        <association property="sreDTO"
+                     column="{goodsId=gid, warehouseId=warehouseNumber, startTime=startTime, endTime=endTime}"
+                     javaType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.SreDTO" select="findSreByGoods"/>
+        <association property="entryDTO"
+                     column="{goodsId=gid, warehouseId=warehouseNumber, startTime=startTime, endTime=endTime}"
+                     javaType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.EntryDTO"
+                     select="findEntryByGoods"/>
+        <association property="extryDTO"
+                     column="{goodsId=gid, warehouseId=warehouseNumber, startTime=startTime, endTime=endTime}"
+                     javaType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.ExtryDTO"
+                     select="findExtryByGoods"/>
+        <association property="swapStorehouseDTO"
+                     column="{goodsId=gid, warehouseId=warehouseNumber, startTime=startTime, endTime=endTime}"
+                     javaType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.SwapStorehouseDTO"
+                     select="findSwapStorehouseByGoods"/>
+        <association property="swapWarehouseDTO"
+                     column="{goodsId=gid, warehouseId=warehouseNumber, startTime=startTime, endTime=endTime}"
+                     javaType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.SwapWarehouseDTO"
+                     select="findSwapWarehouseByGoods"/>
+        <association property="roomDTO" column="{goodsId=gid, warehouseId=warehouseNumber}"
+                     javaType="com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.RoomDTO"
+                     select="findRoomByGoods"/>
+    </resultMap>
+
+</mapper>

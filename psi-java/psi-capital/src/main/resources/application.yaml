@@ -1,0 +1,49 @@
+server:
+  port: ${sp.capital}
+spring:
+  application:
+    name: ${sn.capital}
+
+  datasource:
+    druid:
+      url: jdbc:mysql://121.40.149.36:3306/zo_psi?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+      username: root
+      password: rE#-pmdQ;5.*
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+seata:
+  enabled: false
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml           # Mapper XML文件位置
+  type-aliases-package: com.zeroone.star.project.dto.j3.capital   # 实体类包路径
+  configuration:
+    map-underscore-to-camel-case: true               # 开启驼峰命名转换
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 日志实现
+
+#  application-id: ${spring.application.name}
+#  tx-service-group: my_test_tx_group
+
+#    routes:
+#      - name: 核销单
+#        serviceName: ${sn.capital}
+#        namespaceId: ${nacos.namespace}
+#        location: /v2/api-docs?group=capital
+#      - name: 声明式CPP
+#        serviceName: ${sn.cpp}
+#        namespaceId: ${nacos.namespace}
+#        location: /v2/api-docs?group=cpp
+#      - name: 登录服务
+#        serviceName: ${sn.login}
+#        namespaceId: ${nacos.namespace}
+#        location: /v2/api-docs?group=login
+

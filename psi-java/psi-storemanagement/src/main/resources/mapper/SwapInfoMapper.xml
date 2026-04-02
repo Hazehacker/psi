@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.storemanagement.mapper.SwapInfoMapper">
+    <select id="selectValue"
+            parameterType="com.zeroone.star.storemanagement.entity.SwapInfoDO"
+            resultType="java.lang.String">
+        SELECT id FROM swap_info t
+        WHERE
+            <if test="swapInfoDO.attr != null and swapInfoDO.attr != ''">
+                t.attr = #{swapInfoDO.attr} and
+            </if>
+            <!--因为attr可以为空，把and放到这里面，就不会因为attr为空导致sql错误-->
+            t.unit = #{swapInfoDO.unit}
+        and t.warehouse = #{swapInfoDO.warehouse}
+        and t.storehouse = #{swapInfoDO.storehouse}
+            <if test="swapInfoDO.batch != null and swapInfoDO.batch != ''">
+                and t.batch = #{swapInfoDO.batch}
+            </if>
+            <if test="swapInfoDO.mfd != null">
+                and t.mfd = #{swapInfoDO.mfd}
+            </if>
+        and t.price = #{swapInfoDO.price}
+        and t.nums = #{swapInfoDO.nums}
+        and t.total= #{swapInfoDO.total}
+        <if test="swapInfoDO.data != null and swapInfoDO.data != ''">
+        and t.data = #{swapInfoDO.data}
+        </if>
+    </select>
+
+    <select id="detailTransfer"
+            parameterType="java.lang.String"
+            resultType="com.zeroone.star.project.dto.j2.store.TransferDetailListDTO">
+        SELECT
+        t1.id,
+        t1.pid,
+        t1.goods,
+        t2.name,
+        t2.number,
+        t2.spec,
+        t1.attr,
+        t1.unit,
+        t1.warehouse,
+        t1.storehouse,
+        t1.batch,
+        t1.mfd,
+        t1.price,
+        t1.nums,
+        t1.total,
+        t1.data,
+
+        t3.time,
+        t3.number,
+        t3.total,
+        t3.cost,
+        t3.people
+        t3.logistics,
+        t3.file,
+        t3.data
+        FROM swap_info t1
+        LEFT JOIN goods t2 ON t1.goods = t2.id
+        LEFT JOIN swap t3 ON t1.pid = t3.id
+        WHERE t1.id = #{id}
+    </select>
+
+    <!--swap_info表的key字段-->
+    <sql id="key">
+        <trim suffixOverrides=",">
+            id,
+            <if test="pid != null and pid != ''">pid,</if>
+            <if test="goods != null and goods != ''">goods,</if>
+            <if test="attr != null and attr != ''">attr,</if>
+            <if test="unit != null and unit != ''">unit,</if>
+            <if test="warehouse != null and warehouse != ''">warehouse,</if>
+            <if test="storehouse != null and storehouse != ''">storehouse,</if>
+            <if test="batch != null and batch != ''">batch,</if>
+            <if test="mfd != null">mfd,</if>
+            <if test="price != null">price,</if>
+            <if test="nums != null">nums,</if>
+            <if test="total != null">total,</if>
+            <if test="data != null and data != ''">data,</if>
+        </trim>
+    </sql>
+    <!--插入swap_info表的value字段-->
+    <sql id="value">
+        <trim suffixOverrides=",">
+            #{id},
+            <if test="pid != null and pid != ''">#{pid},</if>
+            <if test="goods != null and goods != ''">#{goods},</if>
+            <if test="attr != null and attr != ''">#{attr},</if>
+            <if test="unit != null and unit != ''">#{unit},</if>
+            <if test="warehouse != null and warehouse != ''">#{warehouse},</if>
+            <if test="storehouse != null and storehouse != ''">#{storehouse},</if>
+            <if test="batch != null and batch != ''">#{batch},</if>
+            <if test="mfd != null">#{mfd},</if>
+            <if test="price != null">#{price},</if>
+            <if test="nums != null">#{nums},</if>
+            <if test="total != null">#{total},</if>
+            <if test="data != null and data != ''">#{data},</if>
+        </trim>
+    </sql>
+    <insert id="insertSwapInfo"
+            parameterType="com.zeroone.star.storemanagement.entity.SwapInfoDO">
+        INSERT INTO swap_info
+        (<include refid="key"/>)
+        VALUES
+        (<include refid="value"/>)
+    </insert>
+
+    <select id="getPidListByIds" resultType="java.lang.String">
+        SELECT pid FROM swap_info WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="getTransferDetailListDTO"
+            resultType="com.zeroone.star.project.dto.j2.store.TransferDetailListDTO">
+        select i.id,i.pid,i.goods,g.name,g.number,g.spec,i.attr,i.warehouse,i.storehouse,i.price,i.nums,i.total,i.data,s.time,s.number as swapNumber,s.total as swapTotal,s.cost,s.people,s.data as swapData
+        from swap_info i
+        join swap s on s.id = i.pid
+        join goods g on g.id = i.goods
+        where i.pid = #{id}
+    </select>
+
+    <update id="updateSwap">
+        UPDATE swap_info
+        <set>
+            <if test="warehouse != null and warehouse != ''">warehouse = #{warehouse},</if>
+            <if test="storehouse != null and storehouse != ''">storehouse = #{storehouse},</if>
+            <if test="batch != null and batch != ''">batch = #{batch},</if>
+            <if test="mfd != null">mfd = #{mfd},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="nums != null">nums = #{nums},</if>
+            <if test="total != null">total = #{total},</if>
+            <if test="data != null and data != ''">data = #{data},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteByIdList">
+        DELETE FROM swap_info
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="getBatchTransferStatus" resultType="java.util.Map">
+        SELECT si.id, si.pid, CAST(s.examine AS SIGNED) as status, si.warehouse, si.storehouse, si.batch,
+        si.goods, si.nums, si.price
+        FROM swap_info si
+        JOIN swap s ON si.pid = s.id
+        WHERE si.id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="getBatchTransferDetail" resultType="com.zeroone.star.storemanagement.entity.SwapInfoDO">
+        SELECT id, pid, goods, warehouse, storehouse, batch, nums, price, mfd, total, data
+        FROM swap_info
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="getSwapByIds" resultType="java.lang.String">
+        SELECT pid FROM swap_info
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="getExistsCountByIds" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM swap_info
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="getBatchTransferNumbers" resultType="java.lang.String">
+        SELECT s.number FROM swap s
+        JOIN swap_info si ON s.id = si.pid
+        WHERE s.id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+</mapper>

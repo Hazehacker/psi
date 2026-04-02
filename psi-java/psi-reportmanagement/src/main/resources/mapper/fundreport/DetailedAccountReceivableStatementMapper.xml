@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.fundreport.DetailedAccountReceivableStatementMapper">
+    <select id="selectByQuery" resultType="com.zeroone.star.project.dto.j5.fundreport.DetailedAccountReceivableStatementDTO">
+        SELECT
+        c.name AS customer,
+        '收款单' AS type,
+        f.name AS frame,
+        i.time AS time,
+        i.number AS number,
+        0 AS increaseAccountsReceivable,
+        0 AS increaseAdvanceReceipts,
+        c.balance AS balance,
+        i.data AS data
+        FROM imy i
+        JOIN customer c ON i.customer = c.id
+        JOIN frame f ON i.frame = f.id
+        WHERE 1=1
+        <if test="query.customer != null and query.customer != ''">
+            AND i.customer = #{query.customer}
+        </if>
+        <if test="query.category != null and query.category != ''">
+            AND c.category = #{query.category}
+        </if>
+        <if test="query.startTime != null">
+            AND i.time >= #{query.startTime}
+        </if>
+        <if test="query.endTime != null">
+            AND i.time &lt;= #{query.endTime}
+        </if>
+    </select>
+
+    <select id="selectAllByQuery" resultType="com.zeroone.star.project.dto.j5.fundreport.DetailedAccountReceivableStatementDTO">
+        SELECT
+        c.name AS customer,
+        '收款单' AS type,
+        f.name AS frame,
+        i.time AS time,
+        i.number AS number,
+        0 AS increaseAccountsReceivable,
+        0 AS increaseAdvanceReceipts,
+        c.balance AS balance,
+        i.data AS data
+        FROM imy i
+        JOIN customer c ON i.customer = c.id
+        JOIN frame f ON i.frame = f.id
+        WHERE 1=1
+        <if test="query.customer != null and query.customer != ''">
+            AND i.customer = #{query.customer}
+        </if>
+        <if test="query.category != null and query.category != ''">
+            AND c.category = #{query.category}
+        </if>
+        <if test="query.startTime != null">
+            AND i.time >= #{query.startTime}
+        </if>
+        <if test="query.endTime != null">
+            AND i.time &lt;= #{query.endTime}
+        </if>
+    </select>
+
+</mapper>

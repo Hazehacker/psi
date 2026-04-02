@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.purchase.mapper.BreMapper">
+
+    <select id="exportBreInfo" resultType="com.zeroone.star.project.dto.j3.purchase.PurchaseReturnDetailReportDTO">
+        SELECT
+        bre.supplier,
+        bre.time,
+        bre.number,
+        goods.name,
+        goods.spec,
+        bre_info.attr,
+        bre_info.unit,
+        bre_info.warehouse,
+        bre_info.price,
+        bre_info.nums,
+        bre_info.discount,
+        bre_info.dsc,
+        bre_info.total,
+        bre_info.tax,
+        bre_info.tat,
+        bre_info.tpt,
+        bre_info.data,
+        bre.total as bTotal,
+        bre.cost,
+        bre.actual,
+        bre_bill.money,
+        bre.account,
+        COALESCE((
+            SELECT COUNT(*)
+            FROM invoice inv
+            WHERE bre.source=inv.class
+        ),0) as nums2,
+        bre.people,
+        bre.logistics,
+        bre.data as data2
+        FROM bre
+        INNER JOIN bre_info on bre.id=bre_info.pid
+        INNER JOIN goods on bre_info.goods=goods.id
+        INNER JOIN bre_bill on bre.source=bre_bill.pid
+        <where>
+            <if test="ids!=null and ids.size()>0">
+                bre.id IN
+                <foreach collection="ids" item="id" open="(" separator="," close=")" >
+                    #{id}
+                </foreach>
+            </if>
+        </where>
+        ORDER BY bre.time DESC
+    </select>
+</mapper>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.finance.mapper.otherexpense.OceInfoViewMapper">
+    <select id="selectByPid" resultType="com.zeroone.star.finance.entity.OceInfoViewDO">
+        SELECT o.id,
+               i.name as ietName,
+               o.money,
+               o.data
+        FROM oce_info o
+                 INNER JOIN iet i ON i.id = o.iet
+        WHERE o.pid = #{pid}
+    </select>
+
+    <!--新增其它支出单详情（支持批量）-->
+    <insert id="insertOceInfoView">
+        INSERT INTO oce_info (id, pid, source, iet, money, data)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.pid}, #{item.source}, #{item.iet}, #{item.money}, #{item.data})
+        </foreach>
+    </insert>
+
+    <!--更新其它支出单详情（支持批量）-->
+    <update id="updateOceInfoView">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE oce_info
+            SET source=#{item.source},
+            iet=#{item.iet},
+            money=#{item.money},
+            data=#{item.data}
+            WHERE id=#{item.id}
+        </foreach>
+    </update>
+
+    <!--删除某个其它支出单的所有详情-->
+    <delete id="deleteOceInfoView" parameterType="string">
+        DELETE FROM oce_info WHERE pid = #{pid}
+    </delete>
+
+    <!--查询某个其它支出单的所有详情-->
+    <select id="selectAllByPid" resultType="com.zeroone.star.project.dto.j8.finance.otherexpense.OtherExpenseInfoViewDTO">
+        SELECT id, pid, source, iet, money, data
+        FROM oce_info
+        WHERE pid = #{pid}
+    </select>
+
+    <!-- 校验iet -->
+    <select id="countIetById" resultType="int" parameterType="string">
+        SELECT COUNT(1) FROM iet WHERE id = #{id}
+    </select>
+
+</mapper>

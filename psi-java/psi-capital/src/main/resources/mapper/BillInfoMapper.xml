@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.capital.mapper.BillInfoMapper">
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        insert into bill_info (id, pid, bill, mold, money, source)
+        values
+        <foreach collection="billInfoDOs" item="billInfo" separator=",">
+            (#{billInfo.id}, #{billInfo.pid}, #{billInfo.bill}, #{billInfo.mold}, #{billInfo.money}, #{billInfo.source})
+        </foreach>
+    </insert>
+
+    <!-- 批量更新 -->
+    <update id="updateBatch" parameterType="java.util.List">
+        <foreach collection="billInfoDOs" item="billInfo" separator=";">
+            update bill_info
+            <set>
+                <if test="billInfo.pid != null">pid = #{billInfo.pid},</if>
+                <if test="billInfo.bill != null">bill = #{billInfo.bill},</if>
+                <if test="billInfo.mold != null">mold = #{billInfo.mold},</if>
+                <if test="billInfo.money != null">money = #{billInfo.money},</if>
+                <if test="billInfo.source != null">source = #{billInfo.source}</if>
+            </set>
+            where id = #{billInfo.id}
+        </foreach>
+    </update>
+
+</mapper>

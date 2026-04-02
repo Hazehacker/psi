@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.procurementreport.PurchaseRankingFormMapper">
+
+    <!-- 结果映射：采购订单排行表 -->
+    <resultMap id="PurchaseRankingFormMap"
+               type="com.zeroone.star.project.dto.j5.procurementreport.PurchaseRankingFormDTO">
+        <result column="goodsName"   property="goodsName"/>
+        <result column="attr"        property="attr"/>
+        <result column="goodsNumber" property="goodsNumber"/>
+        <result column="spec"        property="spec"/>
+        <result column="unit"        property="unit"/>
+
+        <result column="nums"       property="nums"/>
+        <result column="dsc"        property="dsc"/>
+        <result column="tat"        property="tat"/>
+        <result column="tpt"        property="tpt"/>
+        <result column="totalCost"  property="totalCost"/>
+        <result column="cost"       property="cost"/>
+    </resultMap>
+
+    <!-- ====================== 主查询 SQL（采购排行表） ====================== -->
+    <select id="listPurchaseRankingForm"
+            parameterType="com.zeroone.star.project.query.j5.procurementreport.PurchaseRankingFormQuery"
+            resultMap="PurchaseRankingFormMap">
+
+        SELECT
+        g.name   AS goodsName,
+        bi.attr  AS attr,
+        g.number AS goodsNumber,
+        g.spec   AS spec,
+        bi.unit  AS unit,
+
+        -- 汇总指标
+        SUM(bi.nums)                         AS nums,
+        SUM(bi.dsc)                          AS dsc,
+        SUM(bi.tat)                          AS tat,
+        SUM(bi.tpt)                          AS tpt,
+        SUM(bi.total)                        AS totalCost,
+        ROUND(SUM(bi.total)/NULLIF(SUM(bi.nums),0), 2) AS cost
+
+        FROM bor b
+        JOIN bor_info bi ON bi.pid = b.id
+        JOIN goods    g  ON g.id  = bi.goods
+
+        <where>
+            b.examine = 1  <!-- 仅统计已审核订单 -->
+
+            <if test="query.goodsName != null and query.goodsName != ''">
+                AND g.name LIKE CONCAT('%', #{query.goodsName}, '%')
+            </if>
+            <if test="query.goodsNumber != null and query.goodsNumber != ''">
+                AND g.number LIKE CONCAT('%', #{query.goodsNumber}, '%')
+            </if>
+            <if test="query.beginTime != null and query.beginTime != ''">
+                AND b.time &gt;= #{query.beginTime}
+            </if>
+            <if test="query.endTime != null and query.endTime != ''">
+                AND b.time &lt;= #{query.endTime}
+            </if>
+        </where>
+
+        GROUP BY
+        g.id, g.name, g.number, g.spec, bi.unit, bi.attr
+
+        ORDER BY nums DESC
+    </select>
+
+</mapper>

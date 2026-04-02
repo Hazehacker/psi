@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.sale.mapper.SaleInfoMapper">
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO sell_info (
+        id,
+        pid,
+        source,
+        goods,
+        unit,
+        price,
+        nums,
+        discount,
+        dsc,
+        total,
+        tax,
+        tat,
+        tpt,
+        attr,
+        warehouse,
+        batch,
+        mfd,
+        serial,
+        data,
+        retreat
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.id},
+            #{item.pid},
+            #{item.source},
+            #{item.goods},
+            #{item.unit},
+            #{item.price},
+            #{item.nums},
+            #{item.discount},
+            #{item.dsc},
+            #{item.total},
+            #{item.tax},
+            #{item.tat},
+            #{item.tpt},
+            #{item.attr},
+            #{item.warehouse},
+            #{item.batch},
+            #{item.mfd},
+            #{item.serial},
+            #{item.data},
+            #{item.retreat}
+            )
+        </foreach>
+    </insert>
+</mapper>

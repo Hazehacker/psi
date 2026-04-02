@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.fund.mapper.ImyMapper">
+
+    <select id="listAll" resultType="com.zeroone.star.project.dto.j4.fund.FundReceiptListDTO">
+        select
+            i.id,
+            i.frame,
+            i.customer,
+            i.time,
+            i.number,
+            i.total,
+            ib.money,
+            i.people,
+            i.examine,
+            i.nucleus,
+            i.user,
+            i.data
+        from imy i
+        left join imy_bill ib on i.id = ib.pid
+        left join imy_info ii on i.id = ii.pid
+        <where>
+            <if test="query.customer != null &amp;&amp; query.customer != '' ">
+                and i.customer = #{query.customer}
+            </if>
+            <if test="query.beginTime != null &amp;&amp; query.endTime != null ">
+                and Date(i.time) between #{query.beginTime} and #{query.endTime}
+            </if>
+            <if test="query.number != null &amp;&amp; query.number != '' ">
+                and i.number = #{query.number}
+            </if>
+            <if test="query.people != null &amp;&amp; query.people != '' ">
+                and i.people = #{query.people}
+            </if>
+            <if test="query.user != null &amp;&amp; query.user != '' ">
+                and i.user = #{query.user}
+            </if>
+            <if test="query.examine != null">
+                and i.examine = #{query.examine}
+            </if>
+            <if test="query.nucleus != null">
+                and i.nucleus = #{query.nucleus}
+            </if>
+            <if test="query.account != null &amp;&amp; query.account != '' ">
+                and ii.account = #{query.data}
+            </if>
+            <if test="query.data != null &amp;&amp; query.data != '' ">
+                and i.data = #{query.data}
+            </if>
+        </where>
+    </select>
+</mapper>

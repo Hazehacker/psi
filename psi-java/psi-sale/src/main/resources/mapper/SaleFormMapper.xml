@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.sale.mapper.SaleFormMapper">
+
+    <select id="selectSaleList" resultType="com.zeroone.star.project.dto.j4.sale.SaleListDTO">
+        SELECT
+        `id`, `source`, `frame`, `customer`, `time`, `number`, `total`, `actual`, `money`, `cost`,
+        `account`, `people`, `logistics`, `file`, `data`, `more`, `examine`, `nucleus`, `cse`,
+        `invoice`, `check`, `user`
+        FROM `sell`
+        <where>
+            <if test="query.goodsName != null and query.goodsName != ''">
+                AND EXISTS (
+                SELECT 1 FROM sell_info sfi
+                WHERE sfi.pid = sell.id AND sfi.goods LIKE CONCAT('%', #{query.goodsName}, '%')
+                )
+            </if>
+            <if test="query.number != null and query.number != ''">
+                AND number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.customer != null and query.customer != ''">
+                AND customer LIKE CONCAT('%', #{query.customer}, '%')
+            </if>
+            <if test="query.people != null and query.people != ''">
+                AND people LIKE CONCAT('%', #{query.people}, '%')
+            </if>
+            <if test="query.user != null and query.user != ''">
+                AND user LIKE CONCAT('%', #{query.user}, '%')
+            </if>
+            <if test="query.startTime != null">
+                AND time >= #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND time &lt;= #{query.endTime}
+            </if>
+            <if test="query.examine != null">
+                AND examine = #{query.examine}
+            </if>
+            <if test="query.nucleus != null">
+                AND nucleus = #{query.nucleus}
+            </if>
+            <if test="query.cse != null">
+                AND cse = #{query.cse}
+            </if>
+            <if test="query.invoice != null">
+                AND invoice = #{query.invoice}
+            </if>
+            <if test="query.check != null">
+                AND check = #{query.check}
+            </if>
+            <if test="query.data != null and query.data != ''">
+                AND data LIKE CONCAT('%', #{query.data}, '%')
+            </if>
+        </where>
+        ORDER BY time DESC
+    </select>
+
+</mapper>

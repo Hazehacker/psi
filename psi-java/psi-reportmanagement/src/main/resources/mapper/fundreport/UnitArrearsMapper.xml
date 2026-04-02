@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.fundreport.UnitArrearsMapper">
+
+    <resultMap id="UnitArrearsReportResultMap" type="com.zeroone.star.project.dto.j5.fundreport.UnitArrearsReportDTO">
+        <!-- 基础信息字段 -->
+        <result column="type" property="type" jdbcType="VARCHAR"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="number" property="number" jdbcType="VARCHAR"/>
+        <result column="data" property="data" jdbcType="VARCHAR"/>
+        <result column="balance_col" property="balanceCol" jdbcType="DECIMAL"/>
+        <result column="balance_pay" property="balancePay" jdbcType="DECIMAL"/>
+        <result column="balance_col_sum" property="balanceColSum" jdbcType="DECIMAL"/>
+        <result column="balance_pay_sum" property="balancePaySum" jdbcType="DECIMAL"/>
+    </resultMap>
+
+    <select id="listUnitArrearsReport" resultMap="UnitArrearsReportResultMap">
+        SELECT
+        type,
+        name,
+        number,
+        data,
+        balance_col,
+        balance_pay,
+        SUM(balance_col) OVER() AS balance_col_sum,
+        SUM(balance_pay) OVER() AS balance_pay_sum
+        FROM (
+        -- 客户数据（应收款）
+        SELECT
+        'customer' AS type,
+        c.name AS name,
+        c.number AS number,
+        c.data AS data,
+        c.balance AS balance_col,
+        0.0000 AS balance_pay
+        FROM customer c
+        WHERE 1=1
+        <if test="query.name != null and query.name != ''">
+            AND c.name LIKE CONCAT('%', #{query.name}, '%')
+        </if>
+        <if test="query.number != null and query.number != ''">
+            AND c.number LIKE CONCAT('%', #{query.number}, '%')
+        </if>
+        <if test="query.type != null and query.type != ''">
+            AND 'customer' = #{query.type}
+        </if>
+        <if test="query.data != null and query.data != ''">
+            AND c.data LIKE CONCAT('%', #{query.data}, '%')
+        </if>
+        AND c.balance > 0  -- 只显示有应收款的客户
+
+        UNION ALL
+
+        -- 供应商数据（应付款）
+        SELECT
+        'supplier' AS type,
+        s.name AS name,
+        s.number AS number,
+        s.data AS data,
+        0.0000 AS balance_col,
+        s.balance AS balance_pay
+        FROM supplier s
+        WHERE 1=1
+        <if test="query.name != null and query.name != ''">
+            AND s.name LIKE CONCAT('%', #{query.name}, '%')
+        </if>
+        <if test="query.number != null and query.number != ''">
+            AND s.number LIKE CONCAT('%', #{query.number}, '%')
+        </if>
+        <if test="query.type != null and query.type != ''">
+            AND 'supplier' = #{query.type}
+        </if>
+        <if test="query.data != null and query.data != ''">
+            AND s.data LIKE CONCAT('%', #{query.data}, '%')
+        </if>
+        AND s.balance > 0  -- 只显示有应付款的供应商
+        ) AS combined_data
+        ORDER BY type, name
+    </select>
+
+
+</mapper>

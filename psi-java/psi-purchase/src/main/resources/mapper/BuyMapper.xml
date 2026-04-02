@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.purchase.mapper.BuyMapper">
+
+    <update id="updateByPurchaseId" parameterType="com.zeroone.star.purchase.DO.BuyDO">
+        UPDATE `buy`
+        <set>
+            <if test="supplier != null"> `supplier` = #{supplier}, </if>
+            <if test="time != null"> `time` = #{time}, </if>
+            <if test="number != null"> `number` = #{number}, </if>
+            <if test="actual != null"> `actual` = #{actual}, </if>
+            <if test="money != null"> `money` = #{money}, </if>
+            <if test="account != null"> `account` = #{account}, </if>
+            <if test="people != null"> `people` = #{people}, </if>
+            <if test="logistics != null"> `logistics` = #{logistics}, </if>
+            <if test="file != null"> `file` = #{file}, </if>
+            <if test="data != null"> `data` = #{data}, </if>
+            <if test="examine != null"> `examine` = #{examine}, </if>
+            <if test="checkStatus  != null"> `check` = #{checkStatus}, </if>
+        </set>
+        WHERE `id` = #{id}
+    </update>
+    <update id="updateCheckById">
+        UPDATE `buy`
+        <set>
+            `check` = #{status}
+        </set>
+        WHERE `id` = #{id}
+    </update>
+
+    <select id="selectPageWithProduct" resultType="com.zeroone.star.purchase.VO.BuyVO">
+        SELECT
+        b.*
+        FROM
+        buy b <where>
+        <if test="ew.sqlSegment != null and ew.sqlSegment != ''">
+            ${ew.sqlSegment}
+        </if>
+
+        <if test="query.name != null and query.name.trim() != ''">
+            AND EXISTS (
+            SELECT 1
+            FROM
+            buy_info bi JOIN
+            goods g ON bi.goods = g.id WHERE
+            bi.pid = b.id          AND g.name LIKE CONCAT('%', #{query.name}, '%') )
+        </if>
+    </where>
+    </select>
+
+</mapper>

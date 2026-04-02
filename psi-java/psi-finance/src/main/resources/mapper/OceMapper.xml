@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.finance.mapper.OceMapper">
+
+    <!-- 批量删除主表 oce中的数据 -->
+    <delete id="deleteByIds" parameterType="java.util.List">
+
+        DELETE FROM oce
+        WHERE id IN
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 修正：原selectByOceId的SQL语法错误（去掉多余的TABLE()） -->
+    <select id="selectByOceId" resultType="com.zeroone.star.finance.entity.Oce">
+        select id, frame, supplier, time, number, total, actual, money, account, people, file, data, more, examine, nucleus, user
+        from oce
+        where id = #{id}
+    </select>
+
+    <!-- 新增：仅查询examine状态（减少数据传输，优化性能） -->
+    <select id="selectExamineStatusById" resultType="java.lang.Integer">
+        select examine
+        from oce
+        where id = #{id}
+    </select>
+
+    <!-- 批量插入其它支出单数据 -->
+    <insert id="insertBatchOce" parameterType="java.util.List" useGeneratedKeys="false">
+        INSERT INTO oce (
+        id,
+        frame,
+        supplier,
+        time,
+        number,
+        total,
+        actual,
+        money,
+        account,
+        people,
+        file,
+        data,
+        more,
+        examine,
+        nucleus,
+        user
+        )
+        VALUES
+        <foreach collection="list" item="oce" separator=",">
+            (
+            #{oce.id,jdbcType=VARCHAR},
+            #{oce.frame,jdbcType=VARCHAR},
+            #{oce.supplier,jdbcType=VARCHAR},
+            #{oce.time,jdbcType=TIMESTAMP},
+            #{oce.number,jdbcType=VARCHAR},
+            #{oce.total,jdbcType=DECIMAL},
+            #{oce.actual,jdbcType=DECIMAL},
+            #{oce.money,jdbcType=DECIMAL},
+            #{oce.account,jdbcType=VARCHAR},
+            #{oce.people,jdbcType=VARCHAR},
+            #{oce.file,jdbcType=VARCHAR},
+            #{oce.data,jdbcType=VARCHAR},
+            #{oce.more,jdbcType=VARCHAR},
+            #{oce.examine,jdbcType=TINYINT},
+            #{oce.nucleus,jdbcType=TINYINT},
+            #{oce.user,jdbcType=VARCHAR}
+            )
+        </foreach>
+    </insert>
+
+</mapper>

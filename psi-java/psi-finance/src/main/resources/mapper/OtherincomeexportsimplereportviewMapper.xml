@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.finance.mapper.OtherincomeexportsimplereportviewMapper">
+
+    <select id="list" resultType="com.zeroone.star.finance.entity.Otherincomeexportsimplereportview">
+        SELECT
+        ice.id                AS id,
+        frame.name             AS frame,
+        customer.name          AS customer,
+        ice.time              AS time,
+        ice.number            AS number,
+        ice.total             AS total,
+        ice.actual            AS actual,
+        ice.money        AS money,
+        account.name           AS account,
+        people.name            AS people,
+        ice.data              AS data,
+        ice.examine           AS examine,
+        ice.nucleus           AS nucleus,
+        user.name              AS user,
+        ice_bill.id           AS billId,
+        ice_bill.money        AS billMoney
+        FROM ice
+        left join ice_bill on ice.id = ice_bill.pid
+        left join ice_info on ice.id = ice_info.pid
+        left join customer on ice.customer = customer.id
+        left join frame on ice.frame = frame.id
+        left join account on ice.account = account.id
+        left join people on ice.people = people.id
+        left join user on ice.user = user.id
+        <where>
+            <if test="iceIds != null and iceIds.size() > 0">
+                AND ice.id IN
+                <foreach collection="iceIds" item="id" open="(" close=")" separator=",">
+                    #{id}
+                </foreach>
+            </if>
+        </where>
+
+    </select>
+</mapper>

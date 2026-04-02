@@ -1,0 +1,53 @@
+server:
+  port: ${sp.purchase}
+spring:
+  application:
+    name: ${sn.purchase}
+  # Redis（供 Redisson 分布式锁使用）
+  redis:
+    host: ${redis.host:127.0.0.1}
+    port: ${redis.port:6379}
+    password: ${redis.password:}
+    database: 0
+    timeout: 3000ms
+  datasource:
+    druid:
+      url: jdbc:mysql://121.40.149.36:3306/zo_psi?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+      username: root
+      password: rE#-pmdQ;5.*
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      keep-alive: true
+      phy-max-use-count: 1000000
+
+#    routes:
+#      - name: 核销单
+#        serviceName: ${sn.capital}
+#        namespaceId: ${nacos.namespace}
+#        location: /v2/api-docs?group=capital
+#      - name: 声明式CPP
+#        serviceName: ${sn.cpp}
+#        namespaceId: ${nacos.namespace}
+#        location: /v2/api-docs?group=cpp
+#      - name: 登录服务
+#        serviceName: ${sn.login}
+#        namespaceId: ${nacos.namespace}
+#        location: /v2/api-docs?group=login
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+
+seata:
+  enabled: false
+

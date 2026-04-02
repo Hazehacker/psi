@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.sysconfig.mapper.DictMapper">
+
+    <resultMap id="dictDTOResultMap" type="com.zeroone.star.project.dto.j1.sysconfig.DictDTO">
+        <id column="id" property="id"/>
+        <result column="tid" property="tid"/>
+        <result column="name" property="name"/>
+        <result column="value" property="value"/>
+        <result column="remark" property="remark"/>
+        <result column="type_name" property="type_name"/>
+    </resultMap>
+    <select id="selectByCondition" resultMap="dictDTOResultMap">
+        SELECT
+        d.id,
+        d.tid,
+        d.name,
+        d.value,
+        d.remark,
+        dt.name AS type_name
+        FROM
+        dict d
+        LEFT JOIN
+        dict_type dt ON d.tid = dt.id
+        <where>
+            <if test="tid != null and tid != ''">
+                AND d.tid = #{tid}
+            </if>
+            <if test="name != null and name != ''">
+                AND d.name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="value != null and value != ''">
+                AND d.value LIKE CONCAT('%', #{value}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="selectPageByCondition" resultMap="dictDTOResultMap">
+        SELECT
+        d.id,
+        d.tid,
+        d.name,
+        d.value,
+        d.remark,
+        dt.name AS type_name
+        FROM
+        dict d
+        LEFT JOIN
+        dict_type dt ON d.tid = dt.id
+        <where>
+            <if test="condition.tid != null and condition.tid != ''">
+                AND d.tid = #{condition.tid}
+            </if>
+            <if test="condition.name != null and condition.name != ''">
+                AND d.name LIKE CONCAT('%', #{condition.name}, '%')
+            </if>
+            <if test="condition.value != null and condition.value != ''">
+                AND d.value LIKE CONCAT('%', #{condition.value}, '%')
+            </if>
+        </where>
+    </select>
+</mapper>

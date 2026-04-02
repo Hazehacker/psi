@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zeroone.star.finance.mapper.otherincome.OtherIncomeMapper">
+
+    <!-- 基础查询 / 校验 -->
+    <select id="selectIceStatus" resultType="com.zeroone.star.finance.entity.Ice">
+        SELECT id, examine
+        FROM ice
+        WHERE id = #{id}
+        LIMIT 1
+    </select>
+
+    <select id="existsCustomer" resultType="int">
+        SELECT COUNT(1)
+        FROM customer
+        WHERE id = #{id}
+    </select>
+
+    <select id="existsAccount" resultType="int">
+        SELECT COUNT(1)
+        FROM account
+        WHERE id = #{id}
+    </select>
+
+    <select id="existsPeople" resultType="int">
+        SELECT COUNT(1)
+        FROM people
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectExistingIetIds" resultType="string">
+        SELECT id
+        FROM iet
+        <where>
+            <if test="list != null and list.size() > 0">
+                AND id IN
+                <foreach collection="list" item="it" open="(" close=")" separator=",">
+                    #{it}
+                </foreach>
+            </if>
+            <if test="list == null or list.size() == 0">
+                AND 1 = 2
+            </if>
+        </where>
+    </select>
+
+    <!-- 更新单头：仅未审核可改（WHERE examine=0 兜底） -->
+    <update id="updateIceHeadIfUnexamined">
+        UPDATE ice
+        SET frame    = #{dto.frame},
+            customer = #{dto.customer},
+            `time`   = #{dto.time},
+            `number` = #{dto.number},
+            total    = #{dto.total},
+            actual   = #{dto.actual},
+            money    = #{dto.money},
+            account  = #{dto.account},
+            people   = #{dto.people},
+            `file`   = #{dto.file},
+            `data`   = #{dto.data},
+            `more`   = #{dto.more},
+            `user`   = #{dto.user}
+        WHERE id = #{dto.id}
+          AND (examine IS NULL OR examine = 0)
+    </update>
+
+    <!-- 明细删旧 -->
+    <delete id="deleteInfosByPid">
+        DELETE
+        FROM ice_info
+        WHERE pid = #{dto.id}
+    </delete>
+
+    <!-- 明细批量插新（从 dto.info 读集合） -->
+    <insert id="batchInsertInfos">
+        INSERT INTO ice_info (id, pid, iet, money, `data`)
+        VALUES
+        <foreach collection="dto.info" item="it" separator=",">
+            (REPLACE(UUID(),'-',''), #{dto.id}, #{it.iet}, #{it.money}, #{it.data})
+        </foreach>
+    </insert>
+
+    <!-- （可选）数据库端合计 -->
+    <select id="sumInfoMoney" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(money), 0)
+        FROM ice_info
+        WHERE pid = #{dto.id}
+    </select>
+
+    <select id="listAuditedIds" resultType="string">
+        SELECT id FROM ice
+        WHERE examine = 1
+        AND id IN
+        <foreach collection="list" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+    <!-- 批量查询哪些 id 已审核 -->
+    <select id="listAuditedIds" resultType="string">
+        SELECT id
+        FROM ice
+        WHERE examine = 1
+        AND id IN
+        <foreach collection="list" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+
+    <!-- 批量删除明细：pid ∈ ids -->
+    <delete id="deleteInfosByPids">
+        DELETE FROM ice_info
+        WHERE pid IN
+        <foreach collection="list" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 批量删除主表 -->
+    <delete id="deleteIceByIds">
+        DELETE FROM ice
+        WHERE id IN
+        <foreach collection="list" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+    <!-- 字典：name -> id -->
+    <select id="mapFrameName2Id" resultType="map">
+        SELECT name, id
+        FROM frame
+    </select>
+    <select id="mapCustomerName2Id" resultType="map">
+        SELECT name, id
+        FROM customer
+    </select>
+    <select id="mapAccountName2Id" resultType="map">
+        SELECT name, id
+        FROM account
+    </select>
+    <select id="mapPeopleName2Id" resultType="map">
+        SELECT name, id
+        FROM people
+    </select>
+    <select id="mapIetName2Id" resultType="map">
+        SELECT name, id
+        FROM iet
+    </select>
+
+    <!-- 已有单号 -->
+    <select id="listExistingIceNumbers" resultType="string">
+        SELECT `number` FROM ice
+        WHERE `number` IN
+        <foreach collection="numbers" item="n" open="(" close=")" separator=",">
+            #{n}
+        </foreach>
+    </select>
+
+    <!-- 批量插入单头 -->
+    <insert id="batchInsertIce">
+        INSERT INTO ice
+        (id, frame, customer, `time`, `number`, total, actual, money, account, people, `file`, `data`, `more`, examine,
+        nucleus, `user`)
+        VALUES
+        <foreach collection="list" item="it" separator=",">
+            (#{it.id}, #{it.frame}, #{it.customer}, #{it.time}, #{it.number},
+            #{it.total}, #{it.actual}, #{it.money}, #{it.account}, #{it.people},
+            #{it.file}, #{it.data}, #{it.more}, #{it.examine}, #{it.nucleus}, #{it.user})
+        </foreach>
+    </insert>
+
+    <!-- 批量插入明细（用 Map 避免建 DO 类） -->
+    <insert id="batchInsertInfosMap">
+        INSERT INTO ice_info (id, pid, iet, money, `data`)
+        VALUES
+        <foreach collection="list" item="it" separator=",">
+            (#{it.id}, #{it.pid}, #{it.iet}, #{it.money}, #{it.data})
+        </foreach>
+    </insert>
+
+    <!-- 批量插入核销 -->
+    <insert id="batchInsertBillsMap">
+        INSERT INTO ice_bill (id, pid, `type`, `source`, `time`, money)
+        VALUES
+        <foreach collection="list" item="it" separator=",">
+            (#{it.id}, #{it.pid}, #{it.type}, #{it.source}, #{it.time}, #{it.money})
+        </foreach>
+    </insert>
+
+</mapper>

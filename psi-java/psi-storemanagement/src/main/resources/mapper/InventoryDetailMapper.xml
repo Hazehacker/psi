@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.storemanagement.mapper.InventoryDetailMapper">
+    <select id="selectInventoryDetailList" resultType="com.zeroone.star.project.dto.j2.store.InventoryDetailDTO">
+        SELECT
+        <!-- 单据类型 -->
+        CASE
+            WHEN ri.type = 'buy' THEN '采购单'
+            WHEN ri.type = 'sell' THEN '销售单'
+            WHEN ri.type = 'bre' THEN '采购退货单'
+            WHEN ri.type = 'sre' THEN '销售退货单'
+            WHEN ri.type = 'swapOut' THEN '调拨单-出'
+            WHEN ri.type = 'swapEnter' THEN '调拨单-入'
+            WHEN ri.type = 'entry' THEN '其它入库单'
+            WHEN ri.type = 'extry' THEN '其它出库单'
+            ELSE ri.type
+        END as type,
+
+        <!-- 操作类型：直接传递数、字 -->
+        ri.direction as direction,
+
+        <!-- 操作数量 -->
+        ri.nums as nums,
+
+        <!-- 单据信息 -->
+        <!-- 操作时间 -->
+        DATE(ri.time) as `time`,
+
+        <!-- 单据ID -->
+        CASE
+            WHEN ri.type = 'buy' THEN b.id
+            WHEN ri.type = 'sell' THEN s.id
+            WHEN ri.type = 'bre' THEN br.id
+            WHEN ri.type = 'sre' THEN sr.id
+            WHEN ri.type = 'swapOut' THEN sw.id
+            WHEN ri.type = 'swapEnter' THEN sw.id
+            WHEN ri.type = 'entry' THEN e.id
+            WHEN ri.type = 'extry' THEN ex.id
+        ELSE NULL
+        END as id,
+
+        <!-- 单据编号 -->
+        CASE
+            WHEN ri.type = 'buy' THEN b.number
+            WHEN ri.type = 'sell' THEN s.number
+            WHEN ri.type = 'bre' THEN br.number
+            WHEN ri.type = 'sre' THEN sr.number
+            WHEN ri.type = 'swapOut' THEN sw.number
+            WHEN ri.type = 'swapEnter' THEN sw.number
+            WHEN ri.type = 'entry' THEN e.number
+            WHEN ri.type = 'extry' THEN ex.number
+        ELSE ''
+        END as number,
+
+        <!-- 组织信息 -->
+        <!-- 组织ID -->
+        CASE
+            WHEN ri.type = 'buy' THEN f_b.id
+            WHEN ri.type = 'sell' THEN f_s.id
+            WHEN ri.type = 'bre' THEN f_br.id
+            WHEN ri.type = 'sre' THEN f_sr.id
+            WHEN ri.type = 'swapOut' THEN f_sw.id
+            WHEN ri.type = 'swapEnter' THEN f_sw.id
+            WHEN ri.type = 'entry' THEN f_e.id
+            WHEN ri.type = 'extry' THEN f_ex.id
+            ELSE NULL
+        END as frameId,
+
+        <!-- 组织名称 -->
+        CASE
+            WHEN ri.type = 'buy' THEN f_b.name
+            WHEN ri.type = 'sell' THEN f_s.name
+            WHEN ri.type = 'bre' THEN f_br.name
+            WHEN ri.type = 'sre' THEN f_sr.name
+            WHEN ri.type = 'swapOut' THEN f_sw.name
+            WHEN ri.type = 'swapEnter' THEN f_sw.name
+            WHEN ri.type = 'entry' THEN f_e.name
+            WHEN ri.type = 'extry' THEN f_ex.name
+            ELSE ''
+        END as frameName
+
+        FROM room_info ri
+
+        <!-- 关联所有可能的单据详情表来获取商品和属性信息 -->
+        LEFT JOIN  buy_info ri_buy ON ri.type = 'buy' AND ri.info = ri_buy.id
+        LEFT JOIN  sell_info ri_sell ON ri.type = 'sell' AND ri.info = ri_sell.id
+        LEFT JOIN  bre_info ri_bre ON ri.type = 'bre' AND ri.info = ri_bre.id
+        LEFT JOIN  sre_info ri_sre ON ri.type = 'sre' AND ri.info = ri_sre.id
+        LEFT JOIN  swap_info ri_swap ON (ri.type = 'swapOut' OR ri.type = 'swapEnter') AND ri.info = ri_swap.id
+        LEFT JOIN  entry_info ri_entry ON ri.type = 'entry' AND ri.info = ri_entry.id
+        LEFT JOIN  extry_info ri_extry ON ri.type = 'extry' AND ri.info = ri_extry.id
+
+        <!-- 关联所有可能的单据表 -->
+        LEFT JOIN buy b ON ri.type = 'buy' AND ri.class = b.id
+        LEFT JOIN frame f_b ON b.frame = f_b.id
+
+        LEFT JOIN  sell s ON ri.type = 'sell' AND ri.class = s.id
+        LEFT JOIN  frame f_s ON s.frame = f_s.id
+
+        LEFT JOIN  bre br ON ri.type = 'bre' AND ri.class = br.id
+        LEFT JOIN  frame f_br ON br.frame = f_br.id
+
+        LEFT JOIN  sre sr ON ri.type = 'sre' AND ri.class = sr.id
+        LEFT JOIN  frame f_sr ON sr.frame = f_sr.id
+
+        <!-- 调拨单：swapOut和swapEnter都关联 swap表 -->
+        LEFT JOIN  swap sw ON (ri.type = 'swapOut' OR ri.type = 'swapEnter') AND ri.class = sw.id
+        LEFT JOIN  frame f_sw ON sw.frame = f_sw.id
+
+        LEFT JOIN  entry e ON ri.type = 'entry' AND ri.class = e.id
+        LEFT JOIN  frame f_e ON e.frame = f_e.id
+
+        LEFT JOIN  extry ex ON ri.type = 'extry' AND ri.class = ex.id
+        LEFT JOIN  frame f_ex ON ex.frame = f_ex.id
+
+        <where>
+            <!-- 商品ID条件：通过单据详情表获取 -->
+            AND (
+            (ri.type = 'buy' AND ri_buy.goods = #{query.goodsId}) OR
+            (ri.type = 'sell' AND ri_sell.goods = #{query.goodsId}) OR
+            (ri.type = 'bre' AND ri_bre.goods = #{query.goodsId}) OR
+            (ri.type = 'sre' AND ri_sre.goods = #{query.goodsId}) OR
+            ((ri.type = 'swapOut' OR ri.type = 'swapEnter') AND ri_swap.goods = #{query.goodsId}) OR
+            (ri.type = 'entry' AND ri_entry.goods = #{query.goodsId}) OR
+            (ri.type = 'extry' AND ri_extry.goods = #{query.goodsId})
+            )
+
+            <!-- 属性名称条件：直接比较属性名称字符串 -->
+            <if test="query.attrName != null and query.attrName != ''">
+                AND (
+                (ri.type = 'buy' AND ri_buy.attr = #{query.attrName}) OR
+                (ri.type = 'sell' AND ri_sell.attr = #{query.attrName}) OR
+                (ri.type = 'bre' AND ri_bre.attr = #{query.attrName}) OR
+                (ri.type = 'sre' AND ri_sre.attr = #{query.attrName}) OR
+                ((ri.type = 'swapOut' OR ri.type = 'swapEnter') AND ri_swap.attr = #{query.attrName}) OR
+                (ri.type = 'entry' AND ri_entry.attr = #{query.attrName}) OR
+                (ri.type = 'extry' AND ri_extry.attr = #{query.attrName})
+                )
+            </if>
+            <!-- 仓库ID过滤条件  -->
+            <if test="query.warehouseIds != null and query.warehouseIds.size() > 0">
+                AND (
+                <!-- 直接从各个详情表的warehouse字段过滤 -->
+                (ri.type = 'buy' AND ri_buy.warehouse IN
+                <foreach collection="query.warehouseIds" item="warehouseId" open="(" close=")" separator=",">
+                    #{warehouseId}
+                </foreach>
+                ) OR
+                (ri.type = 'sell' AND ri_sell.warehouse IN
+                <foreach collection="query.warehouseIds" item="warehouseId" open="(" close=")" separator=",">
+                    #{warehouseId}
+                </foreach>
+                ) OR
+                (ri.type = 'bre' AND ri_bre.warehouse IN
+                <foreach collection="query.warehouseIds" item="warehouseId" open="(" close=")" separator=",">
+                    #{warehouseId}
+                </foreach>
+                ) OR
+                (ri.type = 'sre' AND ri_sre.warehouse IN
+                <foreach collection="query.warehouseIds" item="warehouseId" open="(" close=")" separator=",">
+                    #{warehouseId}
+                </foreach>
+                ) OR
+                <!-- 调拨单特殊处理：根据方向判断仓库 -->
+                (ri.type = 'swapOut' AND ri_swap.warehouse IN
+                    <foreach collection="query.warehouseIds" item="warehouseId" open="(" close=")" separator=",">
+                        #{warehouseId}
+                    </foreach>
+                ) OR
+                (ri.type = 'swapEnter' AND ri_swap.storehouse IN
+                    <foreach collection="query.warehouseIds" item="warehouseId" open="(" close=")" separator=",">
+                        #{warehouseId}
+                    </foreach>
+                ) OR
+                (ri.type = 'entry' AND ri_entry.warehouse IN
+                <foreach collection="query.warehouseIds" item="warehouseId" open="(" close=")" separator=",">
+                    #{warehouseId}
+                </foreach>
+                ) OR
+                (ri.type = 'extry' AND ri_extry.warehouse IN
+                <foreach collection="query.warehouseIds" item="warehouseId" open="(" close=")" separator=",">
+                    #{warehouseId}
+                </foreach>
+                )
+                )
+            </if>
+            <!-- 单据类型过滤：前端传英文类型 -->
+            <if test="query.documentTypes != null and query.documentTypes.size() > 0">
+                AND ri.type IN
+                <foreach collection="query.documentTypes" item="type" open="(" close=")" separator=",">
+                    #{type}
+                </foreach>
+            </if>
+
+            <!-- 单据编号模糊查询 -->
+            <if test="query.documentNumber != null and query.documentNumber != ''">
+                AND (
+                (ri.type = 'buy' AND b.number LIKE CONCAT('%', #{query.documentNumber}, '%')) OR
+                (ri.type = 'sell' AND s.number LIKE CONCAT('%', #{query.documentNumber}, '%')) OR
+                (ri.type = 'bre' AND br.number LIKE CONCAT('%', #{query.documentNumber}, '%')) OR
+                (ri.type = 'sre' AND sr.number LIKE CONCAT('%', #{query.documentNumber}, '%')) OR
+                ((ri.type = 'swapOut' OR ri.type = 'swapEnter') AND sw.number LIKE CONCAT('%', #{query.documentNumber}, '%')) OR
+                (ri.type = 'entry' AND e.number LIKE CONCAT('%', #{query.documentNumber}, '%')) OR
+                (ri.type = 'extry' AND ex.number LIKE CONCAT('%', #{query.documentNumber}, '%'))
+                )
+            </if>
+
+            <!-- 时间范围：从各个单据表的时间字段获取 -->
+            <if test="query.startDate != null">
+                AND (
+                (ri.type = 'buy' AND DATE(b.time) >= #{query.startDate}) OR
+                (ri.type = 'sell' AND DATE(s.time) >= #{query.startDate}) OR
+                (ri.type = 'bre' AND DATE(br.time) >= #{query.startDate}) OR
+                (ri.type = 'sre' AND DATE(sr.time) >= #{query.startDate}) OR
+                ((ri.type = 'swapOut' OR ri.type = 'swapEnter') AND DATE(sw.time) >= #{query.startDate}) OR
+                (ri.type = 'entry' AND DATE(e.time) >= #{query.startDate}) OR
+                (ri.type = 'extry' AND DATE(ex.time) >= #{query.startDate})
+                )
+            </if>
+            <if test="query.endDate != null">
+                AND (
+                (ri.type = 'buy' AND DATE(b.time) <![CDATA[ <= ]]> #{query.endDate}) OR
+                (ri.type = 'sell' AND DATE(s.time) <![CDATA[ <= ]]> #{query.endDate}) OR
+                (ri.type = 'bre' AND DATE(br.time) <![CDATA[ <= ]]> #{query.endDate}) OR
+                (ri.type = 'sre' AND DATE(sr.time) <![CDATA[ <= ]]> #{query.endDate}) OR
+                ((ri.type = 'swapOut' OR ri.type = 'swapEnter') AND DATE(sw.time) <![CDATA[ <= ]]> #{query.endDate}) OR
+                (ri.type = 'entry' AND DATE(e.time) <![CDATA[ <= ]]> #{query.endDate}) OR
+                (ri.type = 'extry' AND DATE(ex.time) <![CDATA[ <= ]]> #{query.endDate})
+                )
+            </if>
+        </where>
+        ORDER BY ri.time DESC
+    </select>
+
+    <select id="getDetailList" resultType="com.zeroone.star.project.dto.j2.store.InventoryDetailExcelDTO">
+        SELECT
+        DATE(ri.time) AS time,           <!-- 操作时间，转换为LocalDate格式 -->
+        <!-- 将英文类型转换为中文显示 -->
+        CASE
+            WHEN ri.type = 'buy' THEN '采购单'
+            WHEN ri.type = 'sell' THEN '销售单'
+            WHEN ri.type = 'bre' THEN '采购退货单'
+            WHEN ri.type = 'sre' THEN '销售退货单'
+            WHEN ri.type = 'swap' THEN '调拨单'
+            WHEN ri.type = 'swapEnter' THEN '调拨单-入'
+            WHEN ri.type = 'swapOut' THEN '调拨单-出'
+            WHEN ri.type = 'entry' THEN '其它入库单'
+            WHEN ri.type = 'extry' THEN '其它出库单'
+            ELSE ri.type
+        END AS type,
+        <!-- 根据type动态关联不同的单据表获取number -->
+        CASE
+            WHEN ri.type = 'entry' THEN (SELECT number FROM  entry WHERE id = ri.class)
+            WHEN ri.type = 'extry' THEN (SELECT number FROM  extry WHERE id = ri.class)
+            WHEN ri.type = 'buy' THEN (SELECT number FROM  buy WHERE id = ri.class)
+            WHEN ri.type = 'sell' THEN (SELECT number FROM  sell WHERE id = ri.class)
+            WHEN ri.type = 'bre' THEN (SELECT number FROM  bre WHERE id = ri.class)
+            WHEN ri.type = 'sre' THEN (SELECT number FROM  sre WHERE id = ri.class)
+            WHEN ri.type = 'swap' OR ri.type = 'swapEnter' OR ri.type = 'swapOut' THEN (SELECT number FROM  swap WHERE id = ri.class)
+        END AS number,
+        <!-- 根据direction值转换为中文描述 -->
+        CASE
+            WHEN ri.direction = 0 THEN '减少'
+            WHEN ri.direction = 1 THEN '增加'
+            ELSE CAST(ri.direction AS CHAR)
+        END AS direction,
+        CAST(ri.nums AS DECIMAL(10,2)) AS nums
+        FROM  room_info ri
+        INNER JOIN  room r ON ri.pid = r.id
+        WHERE r.goods = #{id}
+        <if test="warehouseIds != null and warehouseIds.size() > 0">
+            AND r.warehouse IN
+            <foreach collection="warehouseIds" item="warehouseId" open="(" separator="," close=")">
+                #{warehouseId}
+            </foreach>
+        </if>
+        ORDER BY ri.time DESC
+    </select>
+</mapper>

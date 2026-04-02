@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.sale.mapper.SaleMapper">
+    <insert id="insert">
+        INSERT INTO sell (
+            id, source, frame, customer, time, number, total, actual, money, cost,
+            account, people, logistics, file, data, more, examine, nucleus, cse,
+            invoice, `check`, user
+        ) VALUES (
+                     #{id}, #{source}, #{frame}, #{customer}, #{time}, #{number},
+                     #{total}, #{actual}, #{money}, #{cost}, #{account}, #{people},
+                     #{logistics}, #{file}, #{data}, #{more}, #{examine}, #{nucleus},
+                     #{cse}, #{invoice}, #{check}, #{user}
+                 )
+    </insert>
+    <update id="updateCheck">
+        update sell set `check` = #{check}
+        where id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </update>
+    <update id="updateExamine">
+        update sell set `examine` = #{examine}
+        where id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </update>
+    <update id="updateById">
+        UPDATE sell SET
+         source = #{source},
+         frame = #{frame},
+         customer = #{customer},
+         time = #{time},
+         number = #{number},
+         total = #{total},
+         actual = #{actual},
+         money = #{money},
+         cost = #{cost},
+         account = #{account},
+         people = #{people},
+         logistics = #{logistics},
+         file = #{file},
+         data = #{data},
+         more = #{more},
+         examine = #{examine},
+         nucleus = #{nucleus},
+         cse = #{cse},
+         invoice = #{invoice},
+         `check` = #{check},
+         user = #{user}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteBatchWithDetails">
+        delete s,si from sell s left join sell_info si on s.id = si.pid
+        where s.id in
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <select id="selectById" resultType="com.zeroone.star.sale.entity.SaleDO">
+        SELECT
+            id, source, frame, customer, time, number, total, actual, money, cost,
+            account, people, logistics, file, data, more, examine, nucleus, cse,
+            invoice, `check`, user
+        FROM sell
+        WHERE id = #{id}
+    </select>
+    <select id="selectBatchIds" resultType="com.zeroone.star.sale.entity.SaleDO">
+        SELECT
+        id, source, frame, customer, time, number, total, actual, money, cost,
+        account, people, logistics, file, data, more, examine, nucleus, cse,
+        invoice, `check`, user
+        FROM sell
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+</mapper>

@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.sale.mapper.SaleOrderMapper">
+    <!-- 结果映射：数据库字段 → DTO 字段 -->
+    <resultMap id="saleResultMap" type="com.zeroone.star.project.dto.j4.sale.SaleOrderGenerateDTO"> <!-- 替换为 SellDTO 实际包路径 -->
+        <id column="id" property="id"/>
+        <result column="source" property="source"/>
+        <result column="frame" property="frame"/>
+        <result column="customer" property="customer"/>
+        <result column="time" property="time"/>
+        <result column="number" property="number"/>
+        <result column="total" property="total"/>
+        <result column="actual" property="actual"/>
+        <result column="money" property="money"/>
+        <result column="cost" property="cost"/>
+        <result column="account" property="account"/>
+        <result column="people" property="people"/>
+        <result column="logistics" property="logistics"/>
+        <result column="file" property="file"/>
+        <result column="data" property="data"/>
+        <result column="more" property="more"/>
+        <result column="examine" property="examine"/>
+        <result column="nucleus" property="nucleus"/>
+        <result column="cse" property="cse"/>
+        <result column="invoice" property="invoice"/>
+        <result column="check" property="check"/>
+        <result column="user" property="user"/>
+    </resultMap>
+
+    <!-- 结果映射：数据库表 buy 字段 → PurchaseOrderGenerateDTO 属性 -->
+    <resultMap id="PurchaseResultMap" type="com.zeroone.star.project.dto.j4.sale.PurchaseOrderGenerateDTO">
+        <!-- 主键映射 -->
+        <id column="id" property="id"/>
+        <!-- 普通字段映射（严格对应数据库表 buy 的字段） -->
+        <result column="source" property="source"/>
+        <result column="frame" property="frame"/>
+        <result column="supplier" property="supplier"/>
+        <result column="time" property="time"/>
+        <result column="number" property="number"/>
+        <result column="total" property="total"/>
+        <result column="actual" property="actual"/>
+        <result column="money" property="money"/>
+        <result column="cost" property="cost"/>
+        <result column="account" property="account"/>
+        <result column="people" property="people"/>
+        <result column="logistics" property="logistics"/>
+        <result column="file" property="file"/>
+        <result column="data" property="data"/>
+        <result column="more" property="more"/>
+        <result column="examine" property="examine"/>
+        <result column="nucleus" property="nucleus"/>
+        <result column="cse" property="cse"/>
+        <result column="invoice" property="invoice"/>
+        <result column="check" property="check"/>
+        <result column="user" property="user"/>
+    </resultMap>
+
+    <select id="list" resultType="com.zeroone.star.project.dto.j4.sale.SaleOrderListDTO">
+        select id , frame , customer , time , number , total , actual , people , arrival , logistics , file , data , more , examine , state , user
+        from sor
+        <where>
+            <if test="query.id != null">
+                and id = #{query.id}
+            </if>
+            <if test="query.frame != null">
+                and frame = #{query.frame}
+            </if>
+            <if test="query.customer != null">
+                and customer = #{query.customer}
+            </if>
+            <if test="query.time != null">
+                and time = #{query.time}
+            </if>
+            <if test="query.number != null">
+                and number = #{query.number}
+            </if>
+            <if test="query.total != null">
+                and total = #{query.total}
+            </if>
+            <if test="query.actual != null">
+                and actual = #{query.actual}
+            </if>
+            <if test="query.people != null">
+                and people = #{query.people}
+            </if>
+            <if test="query.arrival != null">
+                and arrival = #{query.arrival}
+            </if>
+            <if test="query.logistics != null">
+                and logistics = #{query.logistics}
+            </if>
+            <if test="query.file != null">
+                and file = #{query.file}
+            </if>
+            <if test="query.data != null">
+                and data = #{query.data}
+            </if>
+            <if test="query.more != null">
+                and more = #{query.more}
+            </if>
+            <if test="query.examine != null">
+                and examine = #{query.examine}
+            </if>
+            <if test="query.state != null">
+                and state = #{query.state}
+            </if>
+            <if test="query.user != null">
+                and user = #{query.user}
+            </if>
+        </where>
+    </select>
+    <select id="getByQuery" resultType="com.zeroone.star.sale.entity.SaleOrder">
+        select id
+        from sor
+        <where>
+            <if test="customer != null">
+                and customer = #{customer}
+            </if>
+            <if test="time != null">
+                and time = #{time}
+            </if>
+            <if test="number != null">
+                and number = #{number}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据 ID 查询销售单 -->
+    <select id="selectSaleById" resultMap="saleResultMap">
+        SELECT
+            id, source, frame, customer, time, number,
+            total, actual, money, cost, account, people,
+            logistics, file, data, more, examine, nucleus,
+            cse, invoice, `check`, `user`
+        FROM sell
+        WHERE id = #{saleId}
+    </select>
+
+    <!-- 根据 ID 查询采购单 -->
+    <select id="selectPurchaseById" resultMap="PurchaseResultMap">
+        SELECT
+            id, source, frame, supplier, time, number,
+            total, actual, money, cost, account, people,
+            logistics, file, data, more, examine, nucleus,
+            cse, invoice, `check`, `user`
+        FROM buy
+        WHERE id = #{purchaseId}
+    </select>
+
+    <!-- 批量插入主表 -->
+    <insert id="batchInsert">
+        INSERT INTO sor (
+        id, frame, customer, time, number, total, actual,
+        people, arrival, logistics, data, examine, state, user
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.id}, #{item.frame}, #{item.customer},
+            #{item.time}, #{item.number}, #{item.total}, #{item.actual},
+            #{item.people}, #{item.arrival}, #{item.logistics}, #{item.data},
+            #{item.examine}, #{item.state}, #{item.user}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 校验重复单据编号 -->
+    <select id="checkDuplicateNumber" resultType="java.lang.String">
+        SELECT number FROM sor WHERE number IN
+        <foreach collection="numbers" item="no" open="(" separator="," close=")">
+            #{no}
+        </foreach>
+    </select>
+
+    <!-- 查询简洁导出数据 -->
+    <select id="selectSimpleExportByNumbers" resultType="com.zeroone.star.sale.entity.SaleOrderExportSimple">
+        SELECT
+        s.frame AS organization,
+        s.customer AS customer,
+        s.time AS orderTime,
+        s.number AS orderNo,
+        s.total AS orderAmount,
+        s.actual AS actualAmount,
+        s.arrival AS arrivalDate,
+        s.people AS relatedPerson,
+        CASE s.examine WHEN 0 THEN '未审核' WHEN 1 THEN '已审核' END AS auditStatus,
+        CASE s.state
+        WHEN 0 THEN '未出库'
+        WHEN 1 THEN '部分出库'
+        WHEN 2 THEN '已出库'
+        WHEN 3 THEN '关闭'
+        END AS deliveryStatus,
+        s.user AS creator,
+        s.data AS remarks
+        FROM sor s
+        WHERE s.number IN
+        <foreach collection="numbers" item="no" open="(" separator="," close=")">
+            #{no}
+        </foreach>
+    </select>
+
+    <!-- 查询详细导出主表数据 -->
+    <select id="selectDetailExportMain" resultType="com.zeroone.star.sale.entity.SaleOrderExportDetail">
+        SELECT
+        s.customer AS customer,
+        DATE_FORMAT(s.time, '%Y-%m-%d') AS orderDate,
+        s.number AS orderNo,
+        s.total AS totalOrderAmount,
+        s.actual AS totalActualAmount,
+        s.people AS relatedPerson,
+        DATE_FORMAT(s.arrival, '%Y-%m-%d') AS arrivalDate,
+        s.logistics AS logisticsInfo,
+        s.data AS orderRemarks
+        FROM sor s
+        WHERE s.number IN
+        <foreach collection="numbers" item="no" open="(" separator="," close=")">
+            #{no}
+        </foreach>
+    </select>
+
+    <!-- 批量插入明细表 -->
+    <insert id="batchInfoInsert">
+        INSERT INTO sor_info (
+        id, pid, goods, attr, unit, warehouse, price, nums,
+        discount, dsc, total, tax, tat, tpt, data, handle
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.id}, #{item.pid}, #{item.goods}, #{item.attr}, #{item.unit}, #{item.warehouse},
+            #{item.price}, #{item.nums}, #{item.discount}, #{item.dsc}, #{item.total}, #{item.tax},
+            #{item.tat}, #{item.tpt}, #{item.data}, #{item.handle}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 查询详细导出明细数据 -->
+    <select id="selectDetailExportItems" resultType="com.zeroone.star.sale.entity.SaleOrderExportDetailItem">
+        SELECT
+        i.goods AS productName,
+        '' AS specification, -- 若有规格字段可关联商品表查询
+        i.attr AS auxiliaryAttr,
+        i.unit AS unit,
+        i.warehouse AS warehouse,
+        i.price AS unitPrice,
+        i.nums AS quantity,
+        i.handle AS deliveredQuantity,
+        i.discount AS discountRate,
+        i.dsc AS discountAmount,
+        i.total AS amount,
+        i.data AS itemRemarks,
+        s.number AS orderNo -- 关联主表获取单据编号
+        FROM sor_info i
+        LEFT JOIN sor s ON i.pid = s.id
+        WHERE s.number IN
+        <foreach collection="orderNos" item="no" open="(" separator="," close=")">
+            #{no}
+        </foreach>
+    </select>
+
+</mapper>

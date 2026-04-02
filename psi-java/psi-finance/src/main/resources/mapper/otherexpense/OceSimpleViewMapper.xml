@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.finance.mapper.otherexpense.OceSimpleViewMapper">
+
+    <select id="selectByCondition"
+            resultType="com.zeroone.star.finance.entity.OceSimpleViewDO">
+        WITH filtered_oce AS (
+        <!--筛选出符合查询条件的oce表记录-->
+        SELECT *
+        FROM oce o
+        <where>
+            <if test="q.number   != null and q.number   != ''">AND o.number LIKE CONCAT('%', #{q.number}, '%')</if>
+            <if test="q.data     != null and q.data     != ''">AND o.data LIKE CONCAT('%', #{q.data}, '%')</if>
+            <if test="q.startDate != null">AND o.time &gt;= #{q.startDate}</if>
+            <if test="q.endDate   != null">AND o.time &lt;= #{q.endDate}</if>
+            <if test="q.examine   != null">AND o.examine = #{q.examine}</if>
+            <if test="q.nucleus   != null">AND o.nucleus = #{q.nucleus}</if>
+        </where>
+        ),
+        <!--计算每个oce记录对应的账单总金额-->
+        bill_sum AS (
+        SELECT pid, SUM(money) AS sum_money
+        FROM oce_bill
+        WHERE pid IN (SELECT id FROM filtered_oce)
+        GROUP BY pid
+        )
+        SELECT
+        o.id,
+        f.`name` AS frame,
+        s.`name` AS supplier,
+        o.`time`,
+        o.`number`,
+        o.`total`,
+        o.`actual`,
+        o.`money`,
+        IFNULL(b.sum_money, 0) AS writeOffAmount,
+        a.`name` AS account,
+        p.`name` AS people,
+        o.examine,
+        o.nucleus,
+        u.`name` AS `user`,
+        o.`data`
+        FROM filtered_oce o
+        LEFT JOIN bill_sum b ON b.pid = o.id
+        LEFT JOIN frame f ON f.id = o.frame
+        LEFT JOIN supplier s ON s.id = o.supplier
+        LEFT JOIN people p ON p.id = o.people
+        LEFT JOIN account a ON a.id = o.account
+        LEFT JOIN `user` u ON u.id = o.`user`
+        <where>
+            <if test="q.supplier != null and q.supplier != ''">AND s.id = #{q.supplier}</if>
+            <if test="q.account  != null and q.account  != ''">AND a.id = #{q.account}</if>
+            <if test="q.people   != null and q.people   != ''">AND p.id = #{q.people}</if>
+            <if test="q.user     != null and q.user     != ''">AND u.id = #{q.user}</if>
+        </where>
+        ORDER BY o.time DESC, o.id DESC
+    </select>
+
+    <select id="selectByIds" resultType="com.zeroone.star.finance.entity.OceSimpleViewDO">
+        SELECT
+        o.id,
+        f.`name` AS frame,
+        s.`name` AS supplier,
+        o.`time`,
+        o.`number`,
+        o.`total`,
+        o.`actual`,
+        o.`money`,
+        COALESCE(b.sum, 0) AS writeOffAmount,
+        a.`name` AS account,
+        p.`name` AS people,
+        o.examine,
+        o.nucleus,
+        u.`name` AS user,
+        o.`data`
+        FROM oce o
+        LEFT JOIN (SELECT pid, SUM(money) AS sum FROM oce_bill GROUP BY pid) b ON b.pid = o.id
+        LEFT JOIN frame f ON f.id = o.frame
+        LEFT JOIN supplier s ON s.id = o.supplier
+        LEFT JOIN people p ON p.id = o.people
+        LEFT JOIN account a ON a.id = o.account
+        LEFT JOIN `user` u ON u.id = o.`user`
+        WHERE o.id IN
+        <foreach item="item" index="index" collection="ids" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+    <!--新增其它支出单-->
+    <insert id="insertOce">
+        INSERT INTO oce(id, frame, supplier, time, number, total, actual, money, account, people, file, data, more, examine, nucleus, user)
+        VALUES(#{id}, #{frame}, #{supplier}, #{time}, #{number}, #{total}, #{actual}, #{money}, #{account}, #{people}, #{file}, #{data}, #{more}, #{examine}, #{nucleus}, #{user})
+    </insert>
+
+    <!--更新其它支出单-->
+    <update id="updateOce">
+        UPDATE oce
+        SET frame=#{frame}, supplier=#{supplier}, time=#{time}, number=#{number},
+            total=#{total}, actual=#{actual}, money=#{money}, account=#{account},
+            people=#{people}, file=#{file}, data=#{data}, more=#{more}
+        WHERE id=#{id}
+    </update>
+
+    <!--批量更新审核状态-->
+    <update id="updateExamine">
+        UPDATE oce
+        SET examine = #{examine}
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!--查询某个其它支出单-->
+    <select id="selectById"
+            resultType="com.zeroone.star.project.dto.j8.finance.otherexpense.OtherExpenseViewDTO"
+            parameterType="java.lang.String">
+        SELECT
+            id, frame, supplier,
+            time, number,
+            total, actual, money, account, people, file,
+            data, more,
+            examine, nucleus,
+            user
+        FROM oce
+        WHERE id = #{id}
+    </select>
+
+    <!-- 校验账户 -->
+    <select id="countAccountById" resultType="int" parameterType="string">
+        SELECT COUNT(1) FROM account WHERE id = #{id}
+    </select>
+
+    <!-- 校验组织 -->
+    <select id="countFrameById" resultType="int" parameterType="string">
+        SELECT COUNT(1) FROM frame WHERE id = #{id}
+    </select>
+
+    <!-- 校验供应商 -->
+    <select id="countSupplierById" resultType="int" parameterType="string">
+        SELECT COUNT(1) FROM supplier WHERE id = #{id}
+    </select>
+
+    <!-- 校验人员 -->
+    <select id="countPeopleById" resultType="int" parameterType="string">
+        SELECT COUNT(1) FROM people WHERE id = #{id}
+    </select>
+
+    <!-- 校验用户 -->
+    <select id="countUserById" resultType="int" parameterType="string">
+        SELECT COUNT(1) FROM `user` WHERE id = #{id}
+    </select>
+
+</mapper>

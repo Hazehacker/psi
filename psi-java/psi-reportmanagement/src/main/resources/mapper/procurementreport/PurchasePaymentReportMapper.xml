@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.reportmanagement.mapper.procurementreport.PurchasePaymentReportMapper">
+
+    <!-- 查询条件 -->
+    <sql id="whereConditions">
+        <where>
+            <if test="query.supplier != null and query.supplier != ''">
+                AND supplier = #{query.supplier}
+            </if>
+            <if test="query.number != null and query.number != ''">
+                AND number LIKE CONCAT('%', #{query.number}, '%')
+            </if>
+            <if test="query.startTime != null">
+                AND time &gt;= #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND time &lt;= #{query.endTime}
+            </if>
+            <if test="query.nucleus != null">
+                AND nucleus = #{query.nucleus}
+            </if>
+            <if test="query.type != null and query.type != ''">
+                AND type = #{query.type}
+            </if>
+        </where>
+    </sql>
+
+    <!-- 采购付款表查询 -->
+    <select id="selectPurchasePaymentList" resultType="com.zeroone.star.project.dto.j5.procurementreport.PaymentFormFormDTO">
+        SELECT
+            <!-- 基础字段 -->
+            type,
+            id,
+            frame,
+            supplier,
+            time,
+            number,
+            total,
+            actual,
+            money as payment,
+            nucleus,
+            data,
+            frame_name,
+            supplier_name,
+            <!-- 计算字段 -->
+            (actual - money) as balance,
+            CASE
+            WHEN nucleus = 0 THEN '0%'
+            WHEN nucleus = 2 THEN '100%'
+            ELSE CONCAT(ROUND((money / actual) * 100, 2), '%')
+            END as rate
+        FROM (
+            <!-- 采购单数据 -->
+            SELECT
+                '采购单' as type,
+                buy.id,
+                buy.frame,
+                buy.supplier,
+                buy.time,
+                buy.number,
+                buy.total,
+                buy.actual,
+                buy.money,
+                buy.nucleus,
+                buy.data,
+                frame.name as frame_name,
+                supplier.name as supplier_name
+            FROM buy
+            LEFT JOIN frame ON buy.frame = frame.id
+            LEFT JOIN supplier ON buy.supplier = supplier.id
+            WHERE examine = 1
+
+            UNION ALL
+
+            <!-- 采购退货单数据 -->
+            SELECT
+                '采购退货单' as type,
+                bre.id,
+                bre.frame,
+                bre.supplier,
+                bre.time,
+                bre.number,
+                -bre.total as total,
+                -bre.actual as actual,
+                -bre.money as money,
+                bre.nucleus,
+                bre.data,
+                frame.name as frame_name,
+                supplier.name as supplier_name
+            FROM bre
+            LEFT JOIN frame ON bre.frame = frame.id
+            LEFT JOIN supplier ON bre.supplier = supplier.id
+            WHERE examine = 1
+        ) as combined_data
+        <include refid="whereConditions"/>
+        ORDER BY time DESC
+    </select>
+</mapper>

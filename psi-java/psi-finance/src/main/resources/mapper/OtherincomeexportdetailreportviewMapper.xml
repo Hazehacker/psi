@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.finance.mapper.OtherincomeexportdetailreportviewMapper">
+
+    <select id="list" resultType="com.zeroone.star.finance.entity.Otherincomeexportdetailreportview">
+        SELECT
+        i.id AS iceId,
+        c.name AS customer,
+        i.time AS time,
+        i.number AS number,
+        i.data AS data,
+        i.total AS total,
+        a.name AS account,
+        p.name AS people,
+        ii.id AS iceInfoId,
+        ii.money AS money, -- 明细金额用 ice_info.money
+        b.billIds AS iceBillId, -- 如果你要展示多个ID，用字符串承接
+        b.billMoney AS billMoney,
+        et.name AS iet
+        FROM ice i
+        JOIN ice_info ii ON ii.pid = i.id
+        LEFT JOIN (
+        SELECT pid,
+        SUM(money) AS billMoney,
+        GROUP_CONCAT(id ORDER BY id) AS billIds -- 可选
+        FROM ice_bill
+        GROUP BY pid
+        ) b ON b.pid = i.id
+        LEFT JOIN customer c ON c.id = i.customer
+        LEFT JOIN account a ON a.id = i.account
+        LEFT JOIN people p ON p.id = i.people
+        LEFT JOIN iet et ON et.id = ii.iet
+        <where>
+            <if test="iceIds != null and iceIds.size() > 0">
+                AND i.id IN
+                <foreach collection="iceIds" item="id" open="(" close=")" separator=",">
+                    #{id}
+                </foreach>
+            </if>
+        </where>
+        ORDER BY i.id, ii.id
+    </select>
+</mapper>

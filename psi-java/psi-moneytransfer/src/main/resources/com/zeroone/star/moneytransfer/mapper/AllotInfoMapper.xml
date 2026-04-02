@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.moneytransfer.mapper.AllotInfoMapper">
+    <select id="selectByAccount" resultType="java.lang.Boolean">
+        select 1 FROM account WHERE name = #{account}
+    </select>
+    <select id="selectByName" resultType="java.lang.Boolean">
+        select 1 FROM people WHERE name = #{name}
+    </select>
+    <select id="selectNameById" resultType="com.zeroone.star.moneytransfer.entity.User">
+        select name,frame from user where id=#{id}
+    </select>
+    <select id="selectByNumber" resultType="java.lang.String">
+        select id from allot where number = #{number}
+    </select>
+    <select id="selectUserById" resultType="com.zeroone.star.moneytransfer.entity.User">
+        select name,frame from user where id=#{id}
+    </select>
+    <select id="selectBatchPids" resultType="com.zeroone.star.moneytransfer.entity.AllotInfo">
+        select * from allot_info where pid in
+        <foreach item="item" index="index" collection="list"
+                 open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+</mapper>

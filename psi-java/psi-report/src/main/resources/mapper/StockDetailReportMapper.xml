@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zeroone.star.report.mapper.StockDetailReportMapper">
+
+    <select id="pageQuery" resultType="com.zeroone.star.project.vo.j8.report.StockDetailReportVO">
+        /* 1) 先算本期（时间/类型/仓库/商品模糊 已过滤）涉及到的商品集合 G */
+        WITH G AS (
+        SELECT DISTINCT s.goods
+        FROM zo_psi.`summary` s
+        JOIN zo_psi.`goods` g ON g.id = s.goods
+        WHERE 1=1
+        <if test="query.startTime != null">
+            AND s.`time` &gt;= CONCAT(#{query.startTime}, ' 00:00:00')
+        </if>
+        <if test="query.endTime != null">
+            AND s.`time` &lt;= CONCAT(#{query.endTime}, ' 23:59:59')
+        </if>
+        <if test="query.mold != null and query.mold.size() &gt; 0">
+            AND s.type IN
+            <foreach collection="query.mold" item="tp" open="(" separator="," close=")">
+                #{tp}
+            </foreach>
+        </if>
+        <if test="query.goods != null and query.goods != ''">
+            AND (g.name LIKE CONCAT('%', #{query.goods}, '%'))
+        </if>
+        <if test="query.warehouse != null and query.warehouse.size() &gt; 0">
+            AND s.warehouse IN
+            <foreach collection="query.warehouse" item="wid" open="(" separator="," close=")">
+                #{wid}
+            </foreach>
+        </if>
+        ),
+
+        /* 2) 每个商品在【开始日之前】的最新结存，作为“期初余额”（按商品汇总，不分仓） */
+        OPENING AS (
+        SELECT
+        o.goods,
+        SUM(o.balUct * o.balUns) / NULLIF(SUM(o.balUns),0) AS balUct, -- 期初单位成本（加权）
+        SUM(o.balUns) AS balUns, -- 期初数量（总）
+        SUM(o.balBct) AS balBct -- 期初成本额（总）
+        FROM (
+        /* 取每个商品×仓库在 startTime 之前的最后一条 balance */
+        SELECT s1.goods, s1.warehouse,
+        CAST(JSON_UNQUOTE(JSON_EXTRACT(s1.balance,'$.uct')) AS DECIMAL(16,4)) AS balUct,
+        CAST(JSON_UNQUOTE(JSON_EXTRACT(s1.balance,'$.uns')) AS DECIMAL(16,4)) AS balUns,
+        CAST(JSON_UNQUOTE(JSON_EXTRACT(s1.balance,'$.bct')) AS DECIMAL(16,4)) AS balBct
+        FROM zo_psi.`summary` s1
+        JOIN (
+        SELECT goods, warehouse,
+        MAX(CONCAT(DATE_FORMAT(`time`,'%Y%m%d%H%i%s'), id)) AS mkey
+        FROM zo_psi.`summary`
+        <if test="query.startTime != null">
+            WHERE `time` &lt; CONCAT(#{query.startTime}, ' 00:00:00')
+        </if>
+        GROUP BY goods, warehouse
+        ) m ON m.goods = s1.goods AND m.warehouse = s1.warehouse
+        AND CONCAT(DATE_FORMAT(s1.`time`,'%Y%m%d%H%i%s'), s1.id) = m.mkey
+        ) o
+        GROUP BY o.goods
+        ),
+
+        /* 3) 明细行（本期内） */
+        DETAIL AS (
+        SELECT
+        s.type,
+        CASE
+        WHEN s.type='buy' THEN '采购单'
+        WHEN s.type = 'bre' THEN '采购退货单'
+        WHEN s.type='sell' THEN '销售单'
+        WHEN s.type='sre' THEN '销售退货单'
+        WHEN s.type='entry' THEN (CASE WHEN en.type=1 THEN '盘盈单' ELSE '其它入库单' END)
+        WHEN s.type='extry' THEN (CASE WHEN ex.type=1 THEN '盘亏单' ELSE '其它出库单' END)
+        WHEN s.type='swapOut' THEN '调拨单-出'
+        WHEN s.type='swapEnter' THEN '调拨单-入'
+        ELSE s.type
+        END AS typeName,
+        s.class AS billId,
+        s.info AS billDetailId,
+        COALESCE(b.number, se.number, sr.number, en.number, ex.number, sw.number) AS number,
+        s.`time` AS `time`,
+        s.goods AS goodsId,
+        g.name AS goodsName,
+        s.attr AS attr,
+        s.warehouse AS warehouseId,
+        w.name AS warehouseName,
+        s.batch AS batch,
+        s.mfd AS mfd,
+        COALESCE(bi.unit, si.unit, sri.unit, eni.unit, exi.unit, spi.unit, g.unit) AS unit,
+        s.price AS price,
+        CASE WHEN s.direction=1 THEN s.uct END AS inUct,
+        CASE WHEN s.direction=1 THEN s.nums END AS inNums,
+        CASE WHEN s.direction=1 THEN s.bct END AS inBct,
+        CASE WHEN s.direction=0 THEN s.uct END AS outUct,
+        CASE WHEN s.direction=0 THEN s.nums END AS outNums,
+        CASE WHEN s.direction=0 THEN s.bct END AS outBct,
+        CAST(JSON_UNQUOTE(JSON_EXTRACT(s.balance,'$.uct')) AS DECIMAL(16,4)) AS balUct,
+        CAST(JSON_UNQUOTE(JSON_EXTRACT(s.balance,'$.uns')) AS DECIMAL(16,4)) AS balUns,
+        CAST(JSON_UNQUOTE(JSON_EXTRACT(s.balance,'$.bct')) AS DECIMAL(16,4)) AS balBct,
+        COALESCE(b.supplier, en.supplier, NULL) AS partnerId,
+        COALESCE(sup.name, cus.name) AS partnerName,
+        1 AS ord -- 明细 ord=1
+        FROM zo_psi.`summary` s
+        LEFT JOIN zo_psi.`goods` g ON g.id = s.goods
+        LEFT JOIN zo_psi.`warehouse` w ON w.id = s.warehouse
+        LEFT JOIN zo_psi.`buy` b ON s.type='buy' AND b.id=s.class
+        LEFT JOIN zo_psi.`buy_info` bi ON s.type='buy' AND bi.id=s.info
+        LEFT JOIN zo_psi.`sell` se ON s.type='sell' AND se.id=s.class
+        LEFT JOIN zo_psi.`sell_info` si ON s.type='sell' AND si.id=s.info
+        LEFT JOIN zo_psi.`sre` sr ON s.type='sre' AND sr.id=s.class
+        LEFT JOIN zo_psi.`sre_info` sri ON s.type='sre' AND sri.id=s.info
+        LEFT JOIN zo_psi.`entry` en ON s.type='entry' AND en.id=s.class
+        LEFT JOIN zo_psi.`entry_info` eni ON s.type='entry' AND eni.id=s.info
+        LEFT JOIN zo_psi.`extry` ex ON s.type='extry' AND ex.id=s.class
+        LEFT JOIN zo_psi.`extry_info` exi ON s.type='extry' AND exi.id=s.info
+        LEFT JOIN zo_psi.`swap` sw ON (s.type IN ('swapOut','swapEnter') AND sw.id=s.class)
+        LEFT JOIN zo_psi.`swap_info` spi ON (s.type IN ('swapOut','swapEnter') AND spi.id=s.info)
+        LEFT JOIN zo_psi.`supplier` sup ON sup.id = COALESCE(b.supplier, en.supplier)
+        LEFT JOIN zo_psi.`customer` cus ON cus.id = COALESCE(se.customer, sr.customer, ex.customer)
+        WHERE 1=1
+        <if test="query.startTime != null">
+            AND s.`time` &gt;= CONCAT(#{query.startTime}, ' 00:00:00')
+        </if>
+        <if test="query.endTime != null">
+            AND s.`time` &lt;= CONCAT(#{query.endTime}, ' 23:59:59')
+        </if>
+        <if test="query.mold != null and query.mold.size() &gt; 0">
+            AND s.type IN
+            <foreach collection="query.mold" item="tp" open="(" separator="," close=")">
+                #{tp}
+            </foreach>
+        </if>
+        <if test="query.goods != null and query.goods != ''">
+            AND (g.name LIKE CONCAT('%', #{query.goods}, '%'))
+        </if>
+        <if test="query.warehouse != null and query.warehouse.size() &gt; 0">
+            AND s.warehouse IN
+            <foreach collection="query.warehouse" item="wid" open="(" separator="," close=")">
+                #{wid}
+            </foreach>
+        </if>
+        AND s.goods IN (SELECT goods FROM G) -- 只取出现在本期的商品
+        ),
+
+        /* 4) 期初行（每个商品 1 行；放到该商品组的开头） */
+        OPENING_ROWS AS (
+        SELECT
+        'opening' AS type,
+        '期初余额' AS typeName,
+        NULL AS billId, NULL AS billDetailId, NULL AS number, NULL AS `time`,
+        g.goods AS goodsId,
+        gd.name AS goodsName,
+        NULL AS attr,
+        NULL AS warehouseId,
+        NULL AS warehouseName,
+        NULL AS batch,
+        NULL AS mfd,
+        gd.unit AS unit,
+        NULL AS price,
+        NULL AS inUct, NULL AS inNums, NULL AS inBct,
+        NULL AS outUct, NULL AS outNums, NULL AS outBct,
+        COALESCE(o.balUct,0) AS balUct,
+        COALESCE(o.balUns,0) AS balUns,
+        COALESCE(o.balBct,0) AS balBct,
+        NULL AS partnerId,
+        NULL AS partnerName,
+        0 AS ord -- 期初 ord=0
+        FROM G g
+        LEFT JOIN OPENING o ON o.goods = g.goods
+        LEFT JOIN zo_psi.`goods` gd ON gd.id = g.goods
+        )
+
+        /* 5) 合并：同一商品下，先期初（ord=0），再明细（ord=1）；再按时间、id 保序 */
+        SELECT *
+        FROM (
+        SELECT * FROM OPENING_ROWS
+        UNION ALL
+        SELECT * FROM DETAIL
+        ) Z
+        ORDER BY Z.goodsName, Z.ord, Z.`time` IS NULL, Z.`time`, Z.number
+    </select>
+
+    <select id="listAll"
+            resultType="com.zeroone.star.project.vo.j8.report.StockDetailReportVO">
+        WITH
+        G AS (
+        SELECT DISTINCT s.goods
+        FROM zo_psi.`summary` s
+        JOIN zo_psi.`goods` g ON g.id = s.goods
+        WHERE 1=1
+        <if test="query.startTime != null">
+            AND s.`time` &gt;= CONCAT(#{query.startTime}, ' 00:00:00')
+        </if>
+        <if test="query.endTime != null">
+            AND s.`time` &lt;= CONCAT(#{query.endTime}, ' 23:59:59')
+        </if>
+        <if test="query.mold != null and query.mold.size() &gt; 0">
+            AND s.type IN
+            <foreach collection="query.mold" item="tp" open="(" separator="," close=")">
+                #{tp}
+            </foreach>
+        </if>
+        <if test="query.goods != null and query.goods != ''">
+            AND g.name LIKE CONCAT('%', #{query.goods}, '%')
+        </if>
+        <if test="query.warehouse != null and query.warehouse.size() &gt; 0">
+            AND s.warehouse IN
+            <foreach collection="query.warehouse" item="wid" open="(" separator="," close=")">
+                #{wid}
+            </foreach>
+        </if>
+        ),
+
+        OPENING AS (
+        SELECT
+        o.goods,
+        SUM(o.balUct * o.balUns) / NULLIF(SUM(o.balUns),0) AS balUct,
+        SUM(o.balUns) AS balUns,
+        SUM(o.balBct) AS balBct
+        FROM (
+        SELECT s1.goods, s1.warehouse,
+        CAST(JSON_UNQUOTE(JSON_EXTRACT(s1.balance,'$.uct')) AS DECIMAL(16,4)) AS balUct,
+        CAST(JSON_UNQUOTE(JSON_EXTRACT(s1.balance,'$.uns')) AS DECIMAL(16,4)) AS balUns,
+        CAST(JSON_UNQUOTE(JSON_EXTRACT(s1.balance,'$.bct')) AS DECIMAL(16,4)) AS balBct
+        FROM zo_psi.`summary` s1
+        JOIN (
+        SELECT goods, warehouse,
+        MAX(CONCAT(DATE_FORMAT(`time`,'%Y%m%d%H%i%s'), id)) AS mkey
+        FROM zo_psi.`summary`
+        <if test="query.startTime != null">
+            WHERE `time` &lt; CONCAT(#{query.startTime}, ' 00:00:00')
+        </if>
+        GROUP BY goods, warehouse
+        ) m ON m.goods = s1.goods
+        AND m.warehouse = s1.warehouse
+        AND CONCAT(DATE_FORMAT(s1.`time`,'%Y%m%d%H%i%s'), s1.id) = m.mkey
+        ) o
+        GROUP BY o.goods
+        ),
+
+        DETAIL AS (
+        SELECT
+        s.type,
+        CASE
+        WHEN s.type='buy' THEN '采购单'
+        WHEN s.type='bre' THEN '采购退货单'
+        WHEN s.type='sell' THEN '销售单'
+        WHEN s.type='sre' THEN '销售退货单'
+        WHEN s.type='entry' THEN (CASE WHEN en.type=1 THEN '盘盈单' ELSE '其它入库单' END)
+        WHEN s.type='extry' THEN (CASE WHEN ex.type=1 THEN '盘亏单' ELSE '其它出库单' END)
+        WHEN s.type='swapOut' THEN '调拨单-出'
+        WHEN s.type='swapEnter' THEN '调拨单-入'
+        ELSE s.type
+        END AS typeName,
+        s.class AS billId,
+        s.info AS billDetailId,
+        COALESCE(b.number, br.number, se.number, sr.number, en.number, ex.number, sw.number) AS number,
+        s.`time` AS `time`,
+        s.goods AS goodsId,
+        g.name AS goodsName,
+        s.attr AS attr,
+        s.warehouse AS warehouseId,
+        w.name AS warehouseName,
+        s.batch AS batch,
+        s.mfd AS mfd,
+        COALESCE(bi.unit, bri.unit, si.unit, sri.unit, eni.unit, exi.unit, spi.unit, g.unit) AS unit,
+        s.price AS price,
+        CASE WHEN s.direction=1 THEN s.uct END AS inUct,
+        CASE WHEN s.direction=1 THEN s.nums END AS inNums,
+        CASE WHEN s.direction=1 THEN s.bct END AS inBct,
+        CASE WHEN s.direction=0 THEN s.uct END AS outUct,
+        CASE WHEN s.direction=0 THEN s.nums END AS outNums,
+        CASE WHEN s.direction=0 THEN s.bct END AS outBct,
+        CAST(JSON_UNQUOTE(JSON_EXTRACT(s.balance,'$.uct')) AS DECIMAL(16,4)) AS balUct,
+        CAST(JSON_UNQUOTE(JSON_EXTRACT(s.balance,'$.uns')) AS DECIMAL(16,4)) AS balUns,
+        CAST(JSON_UNQUOTE(JSON_EXTRACT(s.balance,'$.bct')) AS DECIMAL(16,4)) AS balBct,
+        COALESCE(b.supplier, en.supplier, br.supplier, NULL) AS partnerId,
+        COALESCE(sup.name, cus.name) AS partnerName,
+        1 AS ord
+        FROM zo_psi.`summary` s
+        LEFT JOIN zo_psi.`goods` g ON g.id = s.goods
+        LEFT JOIN zo_psi.`warehouse` w ON w.id = s.warehouse
+        LEFT JOIN zo_psi.`buy` b ON s.type='buy' AND b.id = s.class
+        LEFT JOIN zo_psi.`buy_info` bi ON s.type='buy' AND bi.id = s.info
+        LEFT JOIN zo_psi.`bre` br ON s.type='bre' AND br.id = s.class
+        LEFT JOIN zo_psi.`bre_info` bri ON s.type='bre' AND bri.id = s.info
+        LEFT JOIN zo_psi.`sell` se ON s.type='sell' AND se.id = s.class
+        LEFT JOIN zo_psi.`sell_info` si ON s.type='sell' AND si.id = s.info
+        LEFT JOIN zo_psi.`sre` sr ON s.type='sre' AND sr.id = s.class
+        LEFT JOIN zo_psi.`sre_info` sri ON s.type='sre' AND sri.id = s.info
+        LEFT JOIN zo_psi.`entry` en ON s.type='entry' AND en.id = s.class
+        LEFT JOIN zo_psi.`entry_info` eni ON s.type='entry' AND eni.id = s.info
+        LEFT JOIN zo_psi.`extry` ex ON s.type='extry' AND ex.id = s.class
+        LEFT JOIN zo_psi.`extry_info` exi ON s.type='extry' AND exi.id = s.info
+        LEFT JOIN zo_psi.`swap` sw ON (s.type IN ('swapOut','swapEnter') AND sw.id = s.class)
+        LEFT JOIN zo_psi.`swap_info` spi ON (s.type IN ('swapOut','swapEnter') AND spi.id = s.info)
+        LEFT JOIN zo_psi.`supplier` sup ON sup.id = COALESCE(b.supplier, en.supplier, br.supplier)
+        LEFT JOIN zo_psi.`customer` cus ON cus.id = COALESCE(se.customer, sr.customer, ex.customer)
+        WHERE 1=1
+        <if test="query.startTime != null">
+            AND s.`time` &gt;= CONCAT(#{query.startTime}, ' 00:00:00')
+        </if>
+        <if test="query.endTime != null">
+            AND s.`time` &lt;= CONCAT(#{query.endTime}, ' 23:59:59')
+        </if>
+        <if test="query.mold != null and query.mold.size() &gt; 0">
+            AND s.type IN
+            <foreach collection="query.mold" item="tp" open="(" separator="," close=")">
+                #{tp}
+            </foreach>
+        </if>
+        <if test="query.goods != null and query.goods != ''">
+            AND g.name LIKE CONCAT('%', #{query.goods}, '%')
+        </if>
+        <if test="query.warehouse != null and query.warehouse.size() &gt; 0">
+            AND s.warehouse IN
+            <foreach collection="query.warehouse" item="wid" open="(" separator="," close=")">
+                #{wid}
+            </foreach>
+        </if>
+        AND s.goods IN (SELECT goods FROM G)
+        ),
+
+        OPENING_ROWS AS (
+        SELECT
+        'opening' AS type,
+        '期初余额' AS typeName,
+        NULL AS billId, NULL AS billDetailId, NULL AS number, NULL AS `time`,
+        g.goods AS goodsId, gd.name AS goodsName,
+        NULL AS attr, NULL AS warehouseId, NULL AS warehouseName,
+        NULL AS batch, NULL AS mfd,
+        gd.unit AS unit,
+        NULL AS price,
+        NULL AS inUct, NULL AS inNums, NULL AS inBct,
+        NULL AS outUct, NULL AS outNums, NULL AS outBct,
+        COALESCE(o.balUct,0) AS balUct,
+        COALESCE(o.balUns,0) AS balUns,
+        COALESCE(o.balBct,0) AS balBct,
+        NULL AS partnerId, NULL AS partnerName,
+        0 AS ord
+        FROM G g
+        LEFT JOIN OPENING o ON o.goods = g.goods
+        LEFT JOIN zo_psi.`goods` gd ON gd.id = g.goods
+        )
+
+        SELECT *
+        FROM (
+        SELECT * FROM OPENING_ROWS
+        UNION ALL
+        SELECT * FROM DETAIL
+        ) Z
+        ORDER BY Z.goodsName, Z.ord, Z.`time` IS NULL, Z.`time`, Z.number
+    </select>
+</mapper>
+   

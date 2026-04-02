@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zeroone.star.storemanagement.mapper.LogMapper">
+
+    <insert id="insertBatch">
+        insert into log (id, time, user, info) VALUES
+        <foreach collection="logList" item="item" separator=",">
+            (#{item.id},#{item.time},#{item.user},#{item.info})
+        </foreach>
+    </insert>
+</mapper>

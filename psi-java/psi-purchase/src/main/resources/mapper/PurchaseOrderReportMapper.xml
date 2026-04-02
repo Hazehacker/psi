@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zeroone.star.purchase.mapper.PurchaseOrderReportMapper">
+
+    <resultMap id="PurchaseOrderExcelInfoMap" type="com.zeroone.star.project.dto.j3.purchase.PurchaseOrderExcelInfoDTO">
+        <result property="dateTime" column="time"/>
+        <result property="billNum" column="number"/>
+        <result property="goodsNum" column="goods_number"/>
+        <result property="billTotal" column="total"/>
+        <result property="actualTotal" column="actual"/>
+        <result property="remarkData" column="data"/>
+        <result property="supplier" column="supplier_name"/>
+        <result property="goods" column="goods_name"/>
+        <result property="spec" column="spec"/>
+        <result property="attr" column="attr"/>
+        <result property="unit" column="unit"/>
+        <result property="warehouse" column="warehouse_name"/>
+        <result property="price" column="price"/>
+        <result property="nums" column="nums"/>
+        <result property="inNums" column="in_nums"/>
+        <result property="discount" column="discount"/>
+        <result property="dsc" column="dsc"/>
+        <result property="commonTotal" column="common_total"/>
+        <result property="people" column="people_name"/>
+        <result property="arrival" column="arrival_date"/>
+        <result property="logistics" column="logistics_info"/>
+    </resultMap>
+
+    <select id="selectPurchaseOrderReportDataByIds" resultMap="PurchaseOrderExcelInfoMap">
+        SELECT
+        b.time,
+        b.number,
+        b.total,
+        b.actual,
+        b.data,
+        b.logistics AS logistics_info,
+        b.supplier AS supplier_name,   b.people AS people_name,       b.arrival AS arrival_date,     g.number AS goods_number,
+        g.name AS goods_name,
+        g.spec,
+
+        pi.attr,
+        pi.unit,
+        pi.warehouse AS warehouse_name, pi.price,
+        pi.nums,
+        pi.discount,
+        pi.dsc,
+        pi.total AS common_total,
+        pi.handle AS in_nums         FROM
+        bor b LEFT JOIN
+        bor_info pi ON b.id = pi.pid LEFT JOIN
+        goods g ON pi.goods = g.id <where>
+        <if test="ids != null and ids.size() > 0">
+            b.id IN
+            <foreach item="id" collection="ids" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+    </where>
+
+        ORDER BY
+        b.time DESC
+    </select>
+</mapper>
