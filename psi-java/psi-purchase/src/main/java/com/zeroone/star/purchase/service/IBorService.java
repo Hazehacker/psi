@@ -26,7 +26,7 @@ import java.util.List;
  * 采购订单 服务类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 public interface IBorService extends IService<BorDO> {
@@ -67,7 +67,7 @@ public interface IBorService extends IService<BorDO> {
 
     /**
      * 导出简单报表
-     * @author 小王
+     * @author Hazenix 
      * @param ids
      * @return
      */
@@ -75,7 +75,7 @@ public interface IBorService extends IService<BorDO> {
 
     /**
      * 导入数据
-     * @author 小王
+     * @author Hazenix 
      * @param file
      */
     Boolean importBor(MultipartFile file);

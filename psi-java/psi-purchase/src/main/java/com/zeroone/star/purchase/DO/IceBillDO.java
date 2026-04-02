@@ -18,7 +18,7 @@ import lombok.Data;
  * 其它收入单核销详情
  * </p>
  *
- * @author 景旭
+ * @author Hazenix 
  * @since 2025-10-25
  */
 @Data

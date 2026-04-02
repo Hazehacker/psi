@@ -14,7 +14,7 @@ import java.util.List;
  * 采购单详情 Mapper 接口
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 @Mapper

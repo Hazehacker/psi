@@ -12,7 +12,7 @@ import java.util.List;
  * 采购退货单核销详情 服务类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 public interface IBreBillService extends IService<BreBillDO> {
@@ -20,7 +20,7 @@ public interface IBreBillService extends IService<BreBillDO> {
     /**
      * @param breDOList
      * @return
-     * @author xiaoliu
+     * @author Hazenix 
      * 根据采购退货单号查询核销详情并封装BreVOPage
      */
     List<PurchaseReturnListVO> getBreVOList(List<BreDO> breDOList);

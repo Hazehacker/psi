@@ -13,14 +13,14 @@ import java.util.List;
  * 采购退货单详情 Mapper 接口
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 @Mapper
 public interface BreInfoMapper extends BaseMapper<BreInfoDO> {
 
     /**
-     * @author xiaoliu
+     * @author Hazenix 
      * 根据采购退货单id查询退货商品详情
      * @param pid 采购退货单id
      * @return 商品详情DTO列表

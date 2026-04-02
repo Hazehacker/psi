@@ -22,7 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * @author 小阳
+ * @author Hazenix 
  * @date 2025/10/24 16:02
  * @description 采购单详情实体类，对应数据库buy_info表
  * Version: 1.0

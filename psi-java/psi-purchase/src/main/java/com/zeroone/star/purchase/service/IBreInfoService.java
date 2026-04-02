@@ -13,7 +13,7 @@ import java.util.List;
  * 采购退货单详情 服务类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 public interface IBreInfoService extends IService<BreInfoDO> {

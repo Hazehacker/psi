@@ -18,7 +18,7 @@ public interface MsPurchaseMapper {
     /**
      * 采购单DO 转 采购单Excel
      * @param buyDO
-     * author 小阳
+     * author Hazenix 
      */
     BuySimpleExcel buyToBuyExcel(BuyDO buyDO);
 
@@ -40,21 +40,21 @@ public interface MsPurchaseMapper {
     /**
      * 采购单infoDO列表 转 采购单infoExcel列表
      * @param buyInfos
-     * author 小阳
+     * author Hazenix 
      */
     List<BuyInfoSimpleExcel> buyInfosToBuyInfoExcels(List<BuyInfoDO> buyInfos);
 
     /**
      * 采购单infoDO列表 转 采购单infoExcel列表
      * @param buyInfos
-     * author 小阳
+     * author Hazenix 
      */
     List<BuyInfoDetailExcel> buyInfosToBuyInfoDetailExcels(List<BuyInfoDO> buyInfos);
 
 /*    *//**
      * 采购单buyDTO 转 采购单Excel
      * @param buyDTO
-     * author 小阳
+     * author Hazenix 
      *//*
     BuySimpleExcel buyDTOToBuyExcel(PurchaseNoteBuyDTO buyDTO);
 
@@ -68,7 +68,7 @@ public interface MsPurchaseMapper {
     *//**
      * 采购单infoDTO列表 转 采购单infoExcel列表
      * @param buyInfoDTOs
-     * author 小阳
+     * author Hazenix 
      *//*
     List<BuyInfoSimpleExcel> buyInfoDTOsToBuyInfoExcels(List<PurchaseNoteInfoDTO> buyInfoDTOs);*/
 }

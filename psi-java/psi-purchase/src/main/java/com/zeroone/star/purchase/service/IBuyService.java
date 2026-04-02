@@ -32,7 +32,7 @@ import java.util.List;
  * 采购单 服务类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 public interface IBuyService extends IService<BuyDO> {
@@ -73,7 +73,7 @@ public interface IBuyService extends IService<BuyDO> {
      * 根据条件分页查询采购单列表
      * @param query 查询条件
      * @return 采购单列表分页数据
-     * @author 加减法
+     * @author Hazenix 
      */
     PageDTO<PurchaseNoteListDTO> listPurchaseNote(PurchaseNoteQuery query);
 }

@@ -76,7 +76,7 @@ import java.util.*;
  * 采购订单 服务实现类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 @Service
@@ -338,7 +338,7 @@ public class BorServiceImpl extends ServiceImpl<BorMapper, BorDO> implements IBo
 
     /**
      * 导出简单报表
-     * @author 小王
+     * @author Hazenix 
      * @param ids 采购订单ID列表
      * @return
      */
@@ -461,7 +461,7 @@ public class BorServiceImpl extends ServiceImpl<BorMapper, BorDO> implements IBo
 
     /**
      * 导入数据
-     * @author 小王
+     * @author Hazenix 
      * @param file Excel文件
      * @return 导入结果
      */

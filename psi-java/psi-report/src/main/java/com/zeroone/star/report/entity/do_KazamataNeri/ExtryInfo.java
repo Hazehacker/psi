@@ -19,7 +19,7 @@ import lombok.experimental.Accessors;
  * 其它出库单详情
  * </p>
  *
- * @author KazamataNeri
+ * @author Hazenix 
  * @since 2025-10-30
  */
 @Data

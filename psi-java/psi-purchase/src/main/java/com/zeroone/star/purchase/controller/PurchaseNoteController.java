@@ -81,7 +81,7 @@ public class PurchaseNoteController implements PurchaseNoteApis {
 
     /**
      * 导入数据
-     * author: 小阳
+     * author: Hazenix 
      */
     @ApiOperation("导入数据")
     @PostMapping("/import")
@@ -99,7 +99,7 @@ public class PurchaseNoteController implements PurchaseNoteApis {
 
     /**
      * 导出简易报表
-     * author: 小阳
+     * author: Hazenix 
      */
     @ApiOperation("导出简易报表")
     @GetMapping(value = "/export/simple", produces = "application/octet-stream")
@@ -146,7 +146,7 @@ public class PurchaseNoteController implements PurchaseNoteApis {
 
     /**
      * 导出详细报表
-     * author: 小阳
+     * author: Hazenix 
      */
     @ApiOperation("导出详细报表")
     @GetMapping("/export/detail")
@@ -193,7 +193,7 @@ public class PurchaseNoteController implements PurchaseNoteApis {
      *
      * @param
      * @return BreDTO 返回生成采购退货单数据
-     * @author TWTW
+     * @author Hazenix 
      */
     @Override
     @ApiOperation("获取生成采购退货单数据")
@@ -210,7 +210,7 @@ public class PurchaseNoteController implements PurchaseNoteApis {
     /***
      * 修改采购单
      * @return 采购单表
-     * @author 正念
+     * @author Hazenix 
      */
     @PostMapping("/revise")
     @ApiOperation(value = "修改采购单")
@@ -224,7 +224,7 @@ public class PurchaseNoteController implements PurchaseNoteApis {
      *
      * @param purchaseNoteAddDTO 采购单参数
      * @return String
-     * @author TWTW
+     * @author Hazenix 
      */
     @Override
     @ApiOperation("新增采购单")
@@ -243,7 +243,7 @@ public class PurchaseNoteController implements PurchaseNoteApis {
      *
      * @param ids 采购单id
      * @return String
-     * @author TWTW
+     * @author Hazenix 
      */
     @Override
     @ApiOperation(value = "删除采购单", notes = "批量删除采购单，传入采购单ID列表")

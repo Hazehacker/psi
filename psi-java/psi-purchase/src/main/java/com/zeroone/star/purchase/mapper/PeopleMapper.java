@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Mapper;
  * 人员管理 Mapper 接口
  * </p>
  *
- * @author 斗气化码
+ * @author Hazenix 
  * @since 2025-11-12
  */
 @Mapper

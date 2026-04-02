@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
  * 商品 服务实现类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 @Service
@@ -20,7 +20,7 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, GoodsDO> implemen
 
 
     /**
-     * @author xiaoliu
+     * @author Hazenix 
      * 根据商品名称、编号、规格型号查询商品id
      * @param goods
      * @param number

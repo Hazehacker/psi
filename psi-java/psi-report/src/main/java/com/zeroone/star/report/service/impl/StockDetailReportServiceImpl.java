@@ -1,8 +1,11 @@
 package com.zeroone.star.report.service.impl;
 
+import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.zeroone.star.common.constant.CacheConstants;
+import com.zeroone.star.common.utils.CacheUtil;
 import com.zeroone.star.project.dto.PageDTO;
 import com.zeroone.star.project.query.j8.report.StockDetailReportQuery;
 import com.zeroone.star.project.vo.j8.report.StockDetailReportVO;
@@ -11,6 +14,7 @@ import com.zeroone.star.report.service.StockDetailReportService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -20,19 +24,43 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
 public class StockDetailReportServiceImpl implements StockDetailReportService {
 
-    private final StockDetailReportMapper stockDetailReportMapper;
+    @Resource
+    private StockDetailReportMapper stockDetailReportMapper;
 
-    public StockDetailReportServiceImpl(StockDetailReportMapper stockDetailReportMapper) {
-        this.stockDetailReportMapper = stockDetailReportMapper;
-    }
+    @Resource
+    private CacheUtil cacheUtil;
 
     @Override
     public PageDTO<StockDetailReportVO> listStockDetail(StockDetailReportQuery query) {
+        // 构建缓存key：前缀 + 查询条件MD5 + 分页
+        String cacheKey = CacheConstants.REPORT_STOCK_DETAIL + ":" +
+                JSONUtil.toJsonStr(query).hashCode() + ":" +
+                query.getPageIndex() + ":" + query.getPageSize();
+
+        try {
+            return cacheUtil.queryWithMutex(
+                    cacheKey,
+                    PageDTO.class,
+                    () -> {
+                        Page<StockDetailReportVO> page = new Page<>(query.getPageIndex(), query.getPageSize());
+                        Page<StockDetailReportVO> result = stockDetailReportMapper.pageQuery(page, query);
+                        return PageDTO.create(result);
+                    },
+                    CacheConstants.DEFAULT_TTL,
+                    TimeUnit.SECONDS
+            );
+        } catch (InterruptedException e) {
+            log.warn("缓存获取失败，降级查数据库", e);
+            Thread.currentThread().interrupt();
+        }
+
+        // 降级查询
         Page<StockDetailReportVO> page = new Page<>(query.getPageIndex(), query.getPageSize());
         Page<StockDetailReportVO> result = stockDetailReportMapper.pageQuery(page, query);
         return PageDTO.create(result);

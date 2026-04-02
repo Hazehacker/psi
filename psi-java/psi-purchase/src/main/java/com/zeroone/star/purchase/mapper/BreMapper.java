@@ -14,7 +14,7 @@ import java.util.List;
  * 采购退货单 Mapper 接口
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 @Mapper
@@ -24,7 +24,7 @@ public interface BreMapper extends BaseMapper<BreDO> {
      * 导出采购退货单详细报表
      * @param ids 采购退货单id
      * @return 带有导出报表信息的响应实体
-     * @author 简单点
+     * @author Hazenix 
      * @date 2025/10/27
      */
     List<PurchaseReturnDetailReportDTO> exportBreInfo(List<String> ids);

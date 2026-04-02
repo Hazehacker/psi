@@ -9,7 +9,7 @@ import lombok.Setter;
 import java.io.Serializable;
 
 /**
- * @author 斗气化码
+ * @author Hazenix 
  * @Data 2025/10/30
  * @Description: 系统配置
  */

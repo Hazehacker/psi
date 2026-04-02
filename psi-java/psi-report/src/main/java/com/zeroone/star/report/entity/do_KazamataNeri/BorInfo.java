@@ -18,7 +18,7 @@ import lombok.experimental.Accessors;
  * 采购订单详情
  * </p>
  *
- * @author KazamataNeri
+ * @author Hazenix 
  * @since 2025-10-30
  */
 @Data

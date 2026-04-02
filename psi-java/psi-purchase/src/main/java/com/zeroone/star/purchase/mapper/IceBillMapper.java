@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Mapper;
  * 其它收入单核销详情 Mapper 接口
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 @Mapper

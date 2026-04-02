@@ -15,9 +15,7 @@ import java.time.LocalDateTime;
  * <p>
  * 描述：初始化MP
  * </p>
- * <p>版权：&copy;01星球</p>
- * <p>地址：01星球总部</p>
- * @author 阿伟学长
+ * @author Hazenix 
  * @version 1.0.0
  */
 @Configuration

@@ -22,9 +22,7 @@ import java.util.stream.StreamSupport;
  * <p>
  * 描述：全局异常捕获处理
  * </p>
- * <p>版权：&copy;01星球</p>
- * <p>地址：01星球总部</p>
- * @author 阿伟学长
+ * @author Hazenix 
  * @version 1.0.0
  */
 @RestControllerAdvice

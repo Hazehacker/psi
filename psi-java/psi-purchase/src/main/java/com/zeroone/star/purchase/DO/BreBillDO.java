@@ -8,7 +8,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
- * @author 斗气化码
+ * @author Hazenix 
  * @Data 2025/10/30
  * @Description: 采购退货单核销详情
  */

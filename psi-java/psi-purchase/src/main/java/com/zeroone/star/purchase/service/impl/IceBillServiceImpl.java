@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
  * 其它收入单核销详情 服务实现类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 @Service

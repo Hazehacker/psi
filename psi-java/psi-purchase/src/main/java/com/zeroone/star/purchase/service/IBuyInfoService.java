@@ -11,7 +11,7 @@ import javax.validation.constraints.NotEmpty;
  * 采购单详情 服务类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 public interface IBuyInfoService extends IService<BuyInfoDO> {
@@ -20,7 +20,7 @@ public interface IBuyInfoService extends IService<BuyInfoDO> {
     /**
      * @Description: 获取指定采购单详情
      * @param: id
-     * @author 加减法
+     * @author Hazenix 
      */
     PurchaseNoteInfoDTO getPurchaseNoteInfo(@NotEmpty(message = "ID不能为空") String id);
 }

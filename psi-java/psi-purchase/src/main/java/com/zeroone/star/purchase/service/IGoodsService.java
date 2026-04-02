@@ -12,13 +12,13 @@ import javax.validation.constraints.Size;
  * 商品 服务类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 public interface IGoodsService extends IService<GoodsDO> {
 
     /**
-     * @author xiaoliu
+     * @author Hazenix 
      * 根据商品名称、编号、规格型号查询商品id
      * @param goods
      * @param number

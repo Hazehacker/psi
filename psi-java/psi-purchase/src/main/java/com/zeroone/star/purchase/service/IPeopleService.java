@@ -8,7 +8,7 @@ import com.zeroone.star.purchase.DO.PeopleDO;
  * 人员管理 服务类
  * </p>
  *
- * @author 斗气化码
+ * @author Hazenix 
  * @since 2025-11-12
  */
 public interface IPeopleService extends IService<PeopleDO> {

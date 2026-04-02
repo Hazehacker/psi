@@ -1,6 +1,9 @@
 package com.zeroone.star.report.service.impl;
 
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.zeroone.star.common.constant.CacheConstants;
+import com.zeroone.star.common.utils.CacheUtil;
 import com.zeroone.star.project.components.easyexcel.EasyExcelComponent;
 import com.zeroone.star.project.dto.PageDTO;
 import com.zeroone.star.project.dto.j8.report.wss_KazamataNeri.StockSummaryReportDTO;
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -24,8 +28,35 @@ public class StockSummaryReportServiceImpl implements StockSummaryReportService 
     @Resource
     private EasyExcelComponent excel;
 
+    @Resource
+    private CacheUtil cacheUtil;
+
     @Override
     public PageDTO<StockSummaryReportDTO> listGoodsReceiptAndDispatchSummary(StockSummaryReportQuery q) {
+        // 构建缓存key：前缀 + 查询条件MD5 + 分页
+        String cacheKey = CacheConstants.REPORT_STOCK_SUMMARY + ":" +
+                JSONUtil.toJsonStr(q).hashCode() + ":" +
+                q.getPageIndex() + ":" + q.getPageSize();
+
+        try {
+            return cacheUtil.queryWithMutex(
+                    cacheKey,
+                    PageDTO.class,
+                    () -> {
+                        Page<StockSummaryReportDTO> page = Page.of(q.getPageIndex(), q.getPageSize());
+                        Page<StockSummaryReportDTO> result = stockSummaryReportMapper.findGoods(page, q);
+                        return PageDTO.create(result);
+                    },
+                    CacheConstants.DEFAULT_TTL,
+                    TimeUnit.SECONDS
+            );
+        } catch (InterruptedException e) {
+            // 降级：直接查数据库
+            log.warn("缓存获取失败，降级查数据库", e);
+            Thread.currentThread().interrupt();
+        }
+
+        // 降级查询
         Page<StockSummaryReportDTO> page = Page.of(q.getPageIndex(), q.getPageSize());
         Page<StockSummaryReportDTO> result = stockSummaryReportMapper.findGoods(page, q);
         return PageDTO.create(result);
@@ -36,7 +67,9 @@ public class StockSummaryReportServiceImpl implements StockSummaryReportService 
     @SneakyThrows
     public ResponseEntity<byte[]> exportWssExcel(StockSummaryReportQuery q) {
         List<StockSummaryReportDTO> rows = stockSummaryReportMapper.findGoodsAll(q);
-        if (rows == null) rows = java.util.Collections.emptyList();
+        if (rows == null) {
+            rows = java.util.Collections.emptyList();
+        }
 
         // ====== 在表尾增加“总条数”一行（显示在 A 列）======
         StockSummaryReportDTO totalRow = new StockSummaryReportDTO();

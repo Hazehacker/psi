@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * 资金账户 服务类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 public interface IAccountService extends IService<AccountDO> {

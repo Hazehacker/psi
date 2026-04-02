@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * 系统配置 服务类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 public interface ISysService extends IService<SysDO> {

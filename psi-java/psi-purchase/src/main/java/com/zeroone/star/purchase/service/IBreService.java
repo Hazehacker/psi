@@ -23,7 +23,7 @@ import java.util.List;
  * 采购退货单 服务类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 public interface IBreService extends IService<BreDO> {
@@ -34,13 +34,13 @@ public interface IBreService extends IService<BreDO> {
      * 导出采购退货单详细报表
      * @param ids 采购退货单id
      * @return 带有导出报表信息的响应实体
-     * @author 简单点
+     * @author Hazenix 
      * @date 2025/10/27
      */
     ResponseEntity<byte[]> exportBreInfo(List<String> ids);
 
     /**
-     * @author xiaoliu
+     * @author Hazenix 
      * 获取获取采购退货单列表VO并封装为PageDTO
      * @param purchaseReturnQuery
      * @return
@@ -49,7 +49,7 @@ public interface IBreService extends IService<BreDO> {
 
 
     /**
-     * @author xiaoliu
+     * @author Hazenix 
      * 新增采购退货单
      * @param purchaseReturnAddDTO
      * @return
@@ -63,21 +63,21 @@ public interface IBreService extends IService<BreDO> {
 
     /**
      * @param purchaseReturnBreAuditDTO 采购退货单审核DTO
-     * @author 斗气化码
+     * @author Hazenix 
      * 批量审核/反审核
      */
     JsonVO<String> approve(PurchaseReturnBreAuditDTO purchaseReturnBreAuditDTO);
 
     /**
      * @param file 导入文件
-     * @author 斗气化码
+     * @author Hazenix 
      * 导入数据
      */
     JsonVO<String> importData(MultipartFile file);
 
     /**
      * @param ids 导出采购退货单简单报表id
-     * @author 斗气化码
+     * @author Hazenix 
      * 导出简单报表
      */
     ResponseEntity<byte[]> exportBre(List<String> ids);

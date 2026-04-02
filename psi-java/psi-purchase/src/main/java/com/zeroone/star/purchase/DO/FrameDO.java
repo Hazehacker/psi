@@ -8,7 +8,7 @@ import lombok.Data;
 /**
  * 组织机构表对应的DO类
  * 映射数据库表：frame（组织机构）
- * @author 斗气化码
+ * @author Hazenix 
  * @date 2025/11/12
  * Version: 1.0
  */

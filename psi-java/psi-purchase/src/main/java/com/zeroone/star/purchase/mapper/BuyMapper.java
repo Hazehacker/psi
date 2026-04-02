@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
  * 采购单 Mapper 接口
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 @Mapper

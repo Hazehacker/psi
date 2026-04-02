@@ -1,8 +1,11 @@
 package com.zeroone.star.report.service.impl;
 
+import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.zeroone.star.common.constant.CacheConstants;
+import com.zeroone.star.common.utils.CacheUtil;
 import com.zeroone.star.project.dto.PageDTO;
 import com.zeroone.star.project.dto.j8.report.ProductStockBalanceDTO;
 import com.zeroone.star.project.dto.j8.report.WarehouseCellDTO;
@@ -11,6 +14,7 @@ import com.zeroone.star.report.entity.Balance.ProductStockBalanceDetailDO;
 import com.zeroone.star.report.entity.Balance.ProductStockBalanceHeadDO;
 import com.zeroone.star.report.mapper.ProductStockBalanceMapper;
 import com.zeroone.star.report.service.StockBalanceReportService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,16 +28,47 @@ import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.concurrent.TimeUnit;
 
 @Service
+@Slf4j
 public class StockBalanceReportServiceImpl implements StockBalanceReportService {
 
     @Resource
     ProductStockBalanceMapper mapper;
 
+    @Resource
+    CacheUtil cacheUtil;
+
     @Override
     public PageDTO<ProductStockBalanceDTO> getProductStocksByCondition(ProductStockBalanceQuery q) {
-        // 1) 分页查“商品层（汇总）”
+        // 构建缓存key：前缀 + 查询条件MD5 + 分页
+        String cacheKey = CacheConstants.REPORT_STOCK_BALANCE + ":" +
+                JSONUtil.toJsonStr(q).hashCode() + ":" +
+                q.getPageIndex() + ":" + q.getPageSize();
+
+        try {
+            return cacheUtil.queryWithMutex(
+                    cacheKey,
+                    PageDTO.class,
+                    () -> queryData(q),
+                    CacheConstants.DEFAULT_TTL,
+                    TimeUnit.SECONDS
+            );
+        } catch (InterruptedException e) {
+            log.warn("缓存获取失败，降级查数据库", e);
+            Thread.currentThread().interrupt();
+        }
+
+        // 降级查询
+        return queryData(q);
+    }
+
+    /**
+     * 查询库存余额数据
+     */
+    private PageDTO<ProductStockBalanceDTO> queryData(ProductStockBalanceQuery q) {
+        // 1) 分页查”商品层（汇总）”
         Page<ProductStockBalanceHeadDO> page = new Page<>(q.getPageIndex(), q.getPageSize());
         IPage<ProductStockBalanceHeadDO> headPage = mapper.pageHeads(page, q);
 
@@ -42,7 +77,7 @@ public class StockBalanceReportServiceImpl implements StockBalanceReportService 
                 .map(ProductStockBalanceHeadDO::getGoodsId)
                 .collect(Collectors.toList());
 
-        // 3) 查“仓库层（多）”
+        // 3) 查”仓库层（多）”
         List<ProductStockBalanceDetailDO> detailList = goodsIds.isEmpty()
                 ? Collections.<ProductStockBalanceDetailDO>emptyList()
                 : mapper.listDetailsByGoodsIds(q, goodsIds);
@@ -91,6 +126,7 @@ public class StockBalanceReportServiceImpl implements StockBalanceReportService 
         return PageDTO.create(dtoPage);
     }
 
+    @Override
     public ResponseEntity<byte[]> export(ProductStockBalanceQuery query) {
         // 1) 全部商品层
         List<ProductStockBalanceHeadDO> heads = mapper.listHeads(query);
@@ -151,7 +187,9 @@ public class StockBalanceReportServiceImpl implements StockBalanceReportService 
 
             Map<String, WarehouseCellDTO> cellByWh = new HashMap<>();
             if (row.getCells() != null) {
-                for (WarehouseCellDTO c : row.getCells()) cellByWh.put(c.getWarehouseId(), c);
+                for (WarehouseCellDTO c : row.getCells()) {
+                    cellByWh.put(c.getWarehouseId(), c);
+                }
             }
             for (String wid : whOrder) {
                 WarehouseCellDTO c = cellByWh.get(wid);
@@ -229,7 +267,9 @@ public class StockBalanceReportServiceImpl implements StockBalanceReportService 
     }
 
     private static BigDecimal scale2(BigDecimal v) {
-        if (v == null) return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        if (v == null) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
         return v.setScale(2, RoundingMode.HALF_UP);
     }
 

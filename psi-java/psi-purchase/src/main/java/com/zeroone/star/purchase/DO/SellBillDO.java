@@ -20,7 +20,7 @@ import java.util.Date;
  * 销售单核销表
  * </p>
  *
- * @author 简单点
+ * @author Hazenix 
  * @since 2025-10-25
  */
 

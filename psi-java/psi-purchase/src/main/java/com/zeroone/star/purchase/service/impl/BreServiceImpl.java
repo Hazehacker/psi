@@ -1,6 +1,8 @@
 package com.zeroone.star.purchase.service.impl;
 import cn.hutool.core.date.DateTime;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zeroone.star.common.constant.CacheConstants;
 import com.zeroone.star.project.dto.j3.purchase.PurchaseReturnDetailReportDTO;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -28,6 +30,8 @@ import com.zeroone.star.purchase.service.IBreService;
 
 import com.zeroone.star.purchase.utils.ExcelHelper;
 import com.zeroone.star.purchase.utils.PurchaseExcelExportDetailUtil;
+import com.zeroone.star.common.constant.CacheConstants;
+import com.zeroone.star.common.utils.CacheUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.context.annotation.Lazy;
@@ -91,13 +95,14 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
  * 采购退货单 服务实现类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 @Service
@@ -114,7 +119,7 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
      * 批量导出采购退货单详细报表
      * @param ids 采购退货单id列表
      * @return 响应实体
-     * @author 简单点
+     * @author Hazenix 
      * @since 2025/10/27
      */
 //    @Override
@@ -188,7 +193,7 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
      * 获取安全的字符串
      * @param value 待处理的字符串
      * @return 安全的字符串
-     * @author 简单点
+     * @author Hazenix 
      * @since 2025/10/27
      */
     private String getSafeString(String value) {
@@ -196,14 +201,14 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
     }
 
     /**
-     * @author xiaoliu
+     * @author Hazenix 
      * 注入IGoodsService
      */
     @Resource
     private IGoodsService iGoodsService;
 
     /**
-     * @author xiaoliu
+     * @author Hazenix 
      * 注入IGoodsService
      */
 
@@ -212,7 +217,7 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
     private IBreInfoService iBreInfoService;
 
     /**
-     * @author xiaoliu
+     * @author Hazenix 
      * 注入IGoodsService
      */
     @Resource
@@ -221,14 +226,43 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
     @Resource
     UserHolder userHolder;
 
+    @Resource
+    CacheUtil cacheUtil;
+
     /**
-     * @author xiaoliu
+     * @author Hazenix 
      * 获取获取采购退货单列表VO
      * @param purchaseReturnQuery
      * @return
      */
     @Override
     public PageDTO<PurchaseReturnListVO> getPurchaseReturnPageDATO(PurchaseReturnQuery purchaseReturnQuery) {
+        // 构建缓存key：前缀 + 查询条件MD5 + 分页
+        String cacheKey = CacheConstants.PURCHASE_BRE_LIST + ":" +
+                JSONUtil.toJsonStr(purchaseReturnQuery).hashCode() + ":" +
+                purchaseReturnQuery.getPageIndex() + ":" + purchaseReturnQuery.getPageSize();
+
+        try {
+            return cacheUtil.queryWithMutex(
+                    cacheKey,
+                    PageDTO.class,
+                    () -> queryBreData(purchaseReturnQuery),
+                    CacheConstants.DEFAULT_TTL,
+                    TimeUnit.SECONDS
+            );
+        } catch (InterruptedException e) {
+            log.warn("缓存获取失败，降级查数据库", e);
+            Thread.currentThread().interrupt();
+        }
+
+        // 降级查询
+        return queryBreData(purchaseReturnQuery);
+    }
+
+    /**
+     * 查询采购退货单数据
+     */
+    private PageDTO<PurchaseReturnListVO> queryBreData(PurchaseReturnQuery purchaseReturnQuery) {
         // 1.查询主表bre：获取BreDO列表
         // 1.1获取查询构造器
         QueryWrapper<BreDO> queryWrapper = this.getQueryWrapper(purchaseReturnQuery);
@@ -249,7 +283,7 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
     }
 
     /**
-     * @author xiaoliu
+     * @author Hazenix 
      * 新增采购退货单
      * @param purchaseReturnAddDTO
      * @return
@@ -314,7 +348,7 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
     }
 
     /**
-     * @author xiaoliu
+     * @author Hazenix 
      * @param purchaseReturnQuery
      * @return QueryWrapper<BreDO>
      * 获取采购退货单查询包装类（用户根据哪些字段查询，根据前端用户传来的请求对象，得到 mybatis 框架支持的查询类）
@@ -420,7 +454,9 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
                 try {
                     if (StrUtil.isNotBlank(pid)) {
                         breMapper.checkOut(pid);
-                    } else return JsonVO.fail(0);
+                    } else {
+                        return JsonVO.fail(0);
+                    }
                 } catch (Exception e) {
                     throw new RuntimeException("核对失败");
                 }
@@ -432,7 +468,9 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
                 try {
                     if (StrUtil.isNotBlank(pid)) {
                         breMapper.checkOut(pid);
-                    } else return JsonVO.fail(0);
+                    } else {
+                        return JsonVO.fail(0);
+                    }
                     breMapper.notCheckOut(pid);
                 } catch (Exception e) {
                     throw new RuntimeException("反核对失败");
@@ -469,7 +507,7 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
     /**
      * @param purchaseReturnBreAuditDTO 采购退货单审核DTO
      * @return 审核结果
-     * @author 斗气化码
+     * @author Hazenix 
      * 批量审核/反审核
      */
     @Override
@@ -624,7 +662,7 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
     /**
      * @param file 导入文件
      * @return 导入结果
-     * @author 斗气化码
+     * @author Hazenix 
      * 导入数据
      */
     @Override
@@ -818,7 +856,7 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
     /**
      * @param ids 导出采购退货单简单报表id
      * @return 带有导出报表信息的响应实体
-     * @author 斗气化码
+     * @author Hazenix 
      * 导出简单报表
      */
     @SneakyThrows
@@ -870,8 +908,9 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
             //关联人员
             if (breDO.getPeople() != null) {
                 PeopleDO peopleDO = peopleService.getById(breDO.getPeople());
-                if (peopleDO != null)
+                if (peopleDO != null){
                     line.setPeople(peopleDO.getName());
+                }
             }
             //审核状态
             switch (breDO.getExamine()) {
@@ -1011,7 +1050,9 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
                 for (int i = currentIndex; i < endIndex; i++) {
                     String id = ids.get(i);
                     BreDO breDO = breMapper.selectById(id);
-                    if (breDO == null) continue;
+                    if (breDO == null) {
+                        continue;
+                    }
 
                     PurchaseReturnExportExcel line = buildExportLine(breDO);
                     page.add(line);
@@ -1033,7 +1074,7 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
         excel.exportStreaming("采购退货单列表", out,
                 PurchaseReturnExportExcel.class, pageQuery, 5000, true);
         // (TODO 这里可以接受返回的`ExportResult`,然后将导出过程中的数据分析持久化到数据库)
-        
+
         HttpHeaders headers = new HttpHeaders();
         String filename = "采购退货单列表-" + DateTime.now().toString("yyyyMMddHHmmss") + ".xlsx.gz";
         headers.setContentDisposition(ContentDisposition.builder("attachment")
@@ -1078,7 +1119,9 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
 
         if (breDO.getPeople() != null) {
             PeopleDO peopleDO = peopleService.getById(breDO.getPeople());
-            if (peopleDO != null) line.setPeople(peopleDO.getName());
+            if (peopleDO != null) {
+                line.setPeople(peopleDO.getName());
+            }
         }
 
         // 状态字段转换
@@ -1098,7 +1141,7 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
     /**
      * @param ids 导出采购退货单详细报表id
      * @return 带有导出详细报表信息的响应实体
-     * @author 斗气化码
+     * @author Hazenix 
      * 导出详细报表
      */
     @SneakyThrows

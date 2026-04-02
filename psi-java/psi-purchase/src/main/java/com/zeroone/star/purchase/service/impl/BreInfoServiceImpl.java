@@ -38,7 +38,7 @@ import java.util.List;
  * 采购退货单详情 服务实现类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 @Service
@@ -51,7 +51,7 @@ public class BreInfoServiceImpl extends ServiceImpl<BreInfoMapper, BreInfoDO> im
      *
      * @param purchaseUpdateDTO 要更新的参数列表
      * @return 状态码 1成功 0失败
-     * @author 景旭
+     * @author Hazenix 
      */
     @Transactional
     public JsonVO<Integer> updateBreInfoDo(PurchaseUpdateDTO purchaseUpdateDTO) {

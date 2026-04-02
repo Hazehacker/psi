@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * 其它收入单核销详情 服务类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 public interface IIceBillService extends IService<IceBillDO> {

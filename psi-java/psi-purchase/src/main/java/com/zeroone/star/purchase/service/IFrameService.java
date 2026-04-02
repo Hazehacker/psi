@@ -8,7 +8,7 @@ import com.zeroone.star.purchase.DO.FrameDO;
  * 组织机构 服务类
  * </p>
  *
- * @author 斗气化码
+ * @author Hazenix 
  * @since 2025-11-12
  */
 public interface IFrameService extends IService<FrameDO> {

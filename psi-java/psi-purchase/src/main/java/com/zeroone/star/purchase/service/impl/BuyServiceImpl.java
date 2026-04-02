@@ -90,7 +90,7 @@ import static com.alibaba.druid.util.StringUtils.*;
  * 采购单 服务实现类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 @Slf4j
@@ -108,7 +108,7 @@ public class BuyServiceImpl extends ServiceImpl<BuyMapper, BuyDO> implements IBu
 
     /**
      * 导出采购单列表到Excel流
-     * author: 小阳
+     * author: Hazenix 
      */
     public void exportPurchaseNoteStreaming(List<String> ids, ByteArrayOutputStream finalOutputStream) {
         // 1. 查询采购单数据
@@ -197,7 +197,7 @@ public class BuyServiceImpl extends ServiceImpl<BuyMapper, BuyDO> implements IBu
 
     /**
      * 导出采购单详情到ZIP流（每个采购单生成一个Excel文件，打包到ZIP）
-     * author: 小阳
+     * author: Hazenix 
      */
     public void exportPurchaseNoteDetailStreaming(List<String> ids, ByteArrayOutputStream baos) {
         // 1. 查询采购单主表数据和详情数据
@@ -402,7 +402,7 @@ public class BuyServiceImpl extends ServiceImpl<BuyMapper, BuyDO> implements IBu
     /**
      * 导入采购单
      * @param excelFile
-     * author: 小阳
+     * author: Hazenix 
      */
 // 批量写入阈值（可调）
     private static final int BATCH_SAVE_SIZE = 500;
@@ -902,7 +902,7 @@ public class BuyServiceImpl extends ServiceImpl<BuyMapper, BuyDO> implements IBu
      * 获取采购单列表实现类
      * @param query 查询条件
      * @return
-     * @author 加减法
+     * @author Hazenix 
      */
     @Override
     public PageDTO<PurchaseNoteListDTO> listPurchaseNote(PurchaseNoteQuery query){

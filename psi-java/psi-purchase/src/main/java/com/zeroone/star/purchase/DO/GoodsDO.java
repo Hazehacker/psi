@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 
 
 /**
- * @author 小阳
+ * @author Hazenix 
  * @date 2025/10/24 22:41
  * @description 商品实体，对应goods表
  * Version: 1.0

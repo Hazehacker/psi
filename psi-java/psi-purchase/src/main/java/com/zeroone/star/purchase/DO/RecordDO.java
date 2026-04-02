@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 /**
  * 单据记录表对应的DO类
  * 映射数据库表：record
- * @author TWTW
+ * @author Hazenix 
  * @date 2025/10/24
  * Version: 1.0
  */

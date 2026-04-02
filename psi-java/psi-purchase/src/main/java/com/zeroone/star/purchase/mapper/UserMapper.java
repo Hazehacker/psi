@@ -19,7 +19,7 @@ import org.apache.ibatis.annotations.Mapper;
  * 用户 Mapper 接口
  * </p>
  *
- * @author 斗气化码
+ * @author Hazenix 
  * @since 2025-11-12
 >>>>>>> remotes/origin/j3-斗气化码
  */

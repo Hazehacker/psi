@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * @author 小阳
+ * @author Hazenix 
  * @date 2025/10/30
  * @description 用于导出采购单详情的Excel实体类
  */

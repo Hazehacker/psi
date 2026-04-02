@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 /**
  * 仓储信息表对应的DO类
  * 映射数据库表：room（仓储信息）
- * @author TWTW
+ * @author Hazenix 
  * @date 2025/10/24
  * Version: 1.0
  */

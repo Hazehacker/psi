@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 /**
  * 人员管理表对应的DO类
  * 映射数据库表：people（人员管理）
- * @author 斗气化码
+ * @author Hazenix 
  * @date 2025/11/12
  * Version: 1.0
  */

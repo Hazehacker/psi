@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  * 采购退货单核销详情 服务实现类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 @Service
@@ -33,7 +33,7 @@ public class BreBillServiceImpl extends ServiceImpl<BreBillMapper, BreBillDO> im
     /**
      * @param breDOList
      * @return
-     * @author xiaoliu
+     * @author Hazenix 
      * 根据采购退货单号查询核销详情并封装BreVOPage
      */
     @Override

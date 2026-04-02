@@ -67,7 +67,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
      * 新增采购单
      * @param purchaseNoteAddDTO 采购单数据
      * @return 是否成功
-     * @author TWTW
+     * @author Hazenix 
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -114,7 +114,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
      * 转换采购单主表DTO为DO
      * @param buyDTO 采购单主表DTO
      * @return 采购单主表DO
-     * @author TWTW
+     * @author Hazenix 
      */
     private BuyDO convertToBuyDO(PurchaseNoteBuyDTO buyDTO) {
         BuyDO buyDO = new BuyDO();
@@ -175,7 +175,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
      *                    采购单ID
      *                    采购单来源
      * @return 采购单明细DO列表
-     * @author TWTW
+     * @author Hazenix 
      */
     private List<BuyInfoDO> convertToBuyInfoDOList(List<PurchaseNoteInfoDTO> infoDTOList, String pid, String source) {
         List<BuyInfoDO> buyInfoDOList = new ArrayList<>();
@@ -217,7 +217,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
      * @param dateStr 日期字符串
      *                默认处理为yyyy-MM-dd HH:mm:ss
      * @return LocalDateTime
-     * @author TWTW
+     * @author Hazenix 
      */
     private LocalDateTime convertDateStringToLocalDateTime(String dateStr) {
         // 处理空字符串或null，返回当前时间
@@ -253,7 +253,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
     /**
      * 插入操作记录到 record 表
      * @param buyDO 采购单DO
-     * @author TWTW
+     * @author Hazenix 
      */
     private void insertRecord(BuyDO buyDO) {
         RecordDO recordDO = new RecordDO();
@@ -277,7 +277,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
     /**
      * 插入操作日志到 log 表
      * @param buyDO 采购单DO
-     * @author TWTW
+     * @author Hazenix 
      */
     private void insertLog(BuyDO buyDO) {
         LogDO logDO = new LogDO();
@@ -298,7 +298,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
     /**
      * 生成32位ID
      * @return 32位ID
-     * @author TWTW
+     * @author Hazenix 
      */
     private String generate32Id() {
         return UUID.randomUUID().toString().replace("-", "").substring(0, 32);
@@ -308,7 +308,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
      * 删除采购单（支持批量）
      * @param ids 采购单ID列表
      * @return 删除结果
-     * @author TWTW
+     * @author Hazenix 
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -345,7 +345,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
     /**
      * 检查采购单状态
      * @param ids 采购单ID列表
-     * @author TWTW
+     * @author Hazenix 
      */
     private void checkPurchaseStatus(List<String> ids) {
         // 查询所有采购单的状态
@@ -421,7 +421,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
     /**
      * 删除采购单明细
      * @param ids 采购单ID列表
-     * @author TWTW
+     * @author Hazenix 
      */
     private void deletePurchaseDetails(List<String> ids) {
         // 构建查询条件：pid在ids列表中
@@ -444,7 +444,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
     /**
      * 删除采购单主表
      * @param ids 采购单ID列表
-     * @author TWTW
+     * @author Hazenix 
      */
     private void deletePurchaseMains(List<String> ids) {
         int deleteCount = buyMapper.deleteBatchIds(ids);
@@ -459,7 +459,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
     /**
      * 删除相关记录
      * @param ids 采购单ID列表
-     * @author TWTW
+     * @author Hazenix 
      */
     private void deleteRelatedRecords(List<String> ids) {
         // 将Integer ID列表转换为String列表，用于record表查询
@@ -478,7 +478,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
     /**
      * 记录删除操作日志
      * @param ids 采购单ID列表
-     * @author TWTW
+     * @author Hazenix 
      */
     private void logDeleteOperation(List<String> ids) {
         // 这里可以记录删除操作的日志
@@ -497,7 +497,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
      * 获取生成采购退货单数据
      * @param id 采购单ID
      * @return 采购退货单数据
-     * @author TWTW
+     * @author Hazenix 
      */
     @Override
     public PurchaseNoteBuildDTO getBuildBreData(String id) {
@@ -534,7 +534,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
     /**
      * 构建采购单核心信息
      * @param buyDO 采购单DO对象
-     * @author TWTW
+     * @author Hazenix 
      */
     private PurchaseNoteBorDTO buildPurchaseNoteBorDTO(BuyDO buyDO) {
         PurchaseNoteBorDTO borDTO = new PurchaseNoteBorDTO();
@@ -554,7 +554,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
     /**
      * 构建采购单明细列表
      * @param pid 采购单ID
-     * @author TWTW
+     * @author Hazenix 
      */
     private List<PurchaseNoteBuilInfoDTO> buildPurchaseNoteBuilInfoDTOList(String pid) {
         // 查询采购单明细
@@ -615,7 +615,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
     /**
      * 获取商品信息
      * @param goodsId 商品ID
-     * @author TWTW
+     * @author Hazenix 
      */
     private GoodsDataDTO getGoodsData(String goodsId) {
         GoodsDO goodsDO = goodsMapper.selectById(goodsId);
@@ -656,7 +656,7 @@ public class PurchaseNoteServiceImpl implements PurchaseNoteService {
     /**
      * 获取仓库信息
      * @param warehouseId 仓库ID
-     * @author TWTW
+     * @author Hazenix 
      */
     private WarehouseDataDTO getWarehouseData(String warehouseId) {
         QueryWrapper<WarehouseDO> queryWrapper = new QueryWrapper<>();

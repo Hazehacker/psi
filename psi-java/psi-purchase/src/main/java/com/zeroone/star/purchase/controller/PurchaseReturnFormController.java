@@ -108,7 +108,7 @@ public class PurchaseReturnFormController implements PurchaseReturnFormApis {
 
     /**
 
-     * @author xiaoliu
+     * @author Hazenix 
 
 
     public JsonVO<Integer> checkOut(@RequestBody List<String> pid) {
@@ -136,7 +136,7 @@ public class PurchaseReturnFormController implements PurchaseReturnFormApis {
 
 
     /**
-     * @author xiaoliu
+     * @author Hazenix 
      * @CreateTime: 2025-10-20
      * 获取指定采购退货单详情
      * @param id 采购退货单id
@@ -187,7 +187,7 @@ public class PurchaseReturnFormController implements PurchaseReturnFormApis {
     /**
      * @param purchaseReturnBreAuditDTO 采购退货单审核DTO
      * @return 审核结果
-     * @author 斗气化码
+     * @author Hazenix 
      * 批量审核/反审核
      */
     @PutMapping("/approve")
@@ -204,7 +204,7 @@ public class PurchaseReturnFormController implements PurchaseReturnFormApis {
      * @param file  导入文件
      * @param file 导入文件
      * @return 导入结果
-     * @author 斗气化码
+     * @author Hazenix 
      * 导入数据
      */
     @PostMapping("/import")
@@ -217,7 +217,7 @@ public class PurchaseReturnFormController implements PurchaseReturnFormApis {
     /**
      * @param ids 导出采购退货单简单报表id
      * @return 带有导出报表信息的响应实体
-     * @author 斗气化码
+     * @author Hazenix 
      * 导出简单报表
      */
     @GetMapping(value = "/bre-export", produces = "application/octet-stream")
@@ -232,7 +232,7 @@ public class PurchaseReturnFormController implements PurchaseReturnFormApis {
      * 导出详细报表
      * @param ids 导出采购退货单详细报表列表
      * @return 带有导出报表信息的响应实体
-     * @author 简单点
+     * @author Hazenix 
      * @since 2025-10-20
      * 导出详细报表
      */

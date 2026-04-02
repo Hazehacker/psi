@@ -14,7 +14,7 @@ import java.util.List;
  * 采购单详情 服务实现类
  * </p>
  *
- * @author 小夏
+ * @author Hazenix 
  * @since 2025-10-27
  */
 @Service
@@ -22,7 +22,7 @@ public class BuyInfoServiceImpl extends ServiceImpl<BuyInfoMapper, BuyInfoDO> im
 
     /**
      * 批量查询采购单详情
-     * author: 小阳
+     * author: Hazenix 
      */
     @Override
     public List<BuyInfoDO> selectBatchByPids(List<String> ids) {
@@ -35,7 +35,7 @@ public class BuyInfoServiceImpl extends ServiceImpl<BuyInfoMapper, BuyInfoDO> im
      * 获取指定采购单详情
      * @param id
      * @return
-     * @author: 加减法
+     * @author: Hazenix 
      */
     @Override
     public PurchaseNoteInfoDTO getPurchaseNoteInfo(String id) {
