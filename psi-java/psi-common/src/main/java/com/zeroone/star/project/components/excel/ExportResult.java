@@ -1,11 +1,18 @@
 package com.zeroone.star.project.components.excel;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.io.Serializable;
 
 /**
  * 导出结果封装
  * 包含导出数据和监控指标
  */
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class ExportResult implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -28,61 +35,11 @@ public class ExportResult implements Serializable {
     /** 是否启用压缩 */
     private boolean compressed;
 
-    public ExportResult() {
-    }
+
 
     public ExportResult(long rowCount, long elapsedMs) {
         this.rowCount = rowCount;
         this.elapsedMs = elapsedMs;
-    }
-
-    // Getters and Setters
-    public long getRowCount() {
-        return rowCount;
-    }
-
-    public void setRowCount(long rowCount) {
-        this.rowCount = rowCount;
-    }
-
-    public long getElapsedMs() {
-        return elapsedMs;
-    }
-
-    public void setElapsedMs(long elapsedMs) {
-        this.elapsedMs = elapsedMs;
-    }
-
-    public long getOriginalSize() {
-        return originalSize;
-    }
-
-    public void setOriginalSize(long originalSize) {
-        this.originalSize = originalSize;
-    }
-
-    public long getCompressedSize() {
-        return compressedSize;
-    }
-
-    public void setCompressedSize(long compressedSize) {
-        this.compressedSize = compressedSize;
-    }
-
-    public long getPeakMemory() {
-        return peakMemory;
-    }
-
-    public void setPeakMemory(long peakMemory) {
-        this.peakMemory = peakMemory;
-    }
-
-    public boolean isCompressed() {
-        return compressed;
-    }
-
-    public void setCompressed(boolean compressed) {
-        this.compressed = compressed;
     }
 
     /**

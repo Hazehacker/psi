@@ -53,8 +53,12 @@ public class StreamingExcelExporter {
     public <T> ExportResult export(String sheetName, OutputStream outputStream,
                                     Class<T> clazz, CursorPageQuery<T> pageQuery,
                                     int pageSize, boolean compressGzip) {
+
         long startTime = System.currentTimeMillis();
+
+        // 计算初始内存占用
         Runtime runtime = Runtime.getRuntime();
+        // JVM当前已分配给堆的总内存 - JVM堆中尚未使用的空闲内存 = 已使用内存
         long startMemory = runtime.totalMemory() - runtime.freeMemory();
         long peakMemory = startMemory;
 
@@ -80,7 +84,7 @@ public class StreamingExcelExporter {
 
             while (true) {
                 // 分页查询
-                List<T> page = pageQuery.nextPage(lastId, pageSize);
+                List<?> page = pageQuery.nextPage(lastId, pageSize);
                 if (page.isEmpty()) {
                     break;
                 }

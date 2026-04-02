@@ -1019,7 +1019,7 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
                 }
 
                 currentIndex = endIndex;
-                this.lastId = lastId;
+                this.lastId = (Integer) lastId;
                 return page;
             }
 
@@ -1032,13 +1032,16 @@ public class BreServiceImpl extends ServiceImpl<BreMapper, BreDO> implements IBr
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         excel.exportStreaming("采购退货单列表", out,
                 PurchaseReturnExportExcel.class, pageQuery, 5000, true);
-
+        // (TODO 这里可以接受返回的`ExportResult`,然后将导出过程中的数据分析持久化到数据库)
+        
         HttpHeaders headers = new HttpHeaders();
         String filename = "采购退货单列表-" + DateTime.now().toString("yyyyMMddHHmmss") + ".xlsx.gz";
         headers.setContentDisposition(ContentDisposition.builder("attachment")
                 .filename(filename, StandardCharsets.UTF_8)
                 .build());
         headers.setContentType(MediaType.parseMediaType("application/octet-stream"));
+        // 设置 GZIP 压缩响应头，浏览器会自动解压
+        headers.set("Content-Encoding", "gzip");
 
         return new ResponseEntity<>(out.toByteArray(), headers, HttpStatus.OK);
     }

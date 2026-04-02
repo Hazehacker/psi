@@ -50,12 +50,12 @@ public class MybatisCursorPageQuery<T> implements CursorPageQuery<T> {
     /**
      * 获取最后一页的最后一条记录的 ID
      */
-    public Integer getLastId(List<T> page) {
+    public Integer getLastId(List<?> page) {
         if (page == null || page.isEmpty()) {
             return null;
         }
         try {
-            T lastItem = page.get(page.size() - 1);
+            T lastItem = (T) page.get(page.size() - 1);
             java.lang.reflect.Method idMethod = lastItem.getClass().getMethod("getId");
             Object id = idMethod.invoke(lastItem);
             return (Integer) id;

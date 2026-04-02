@@ -8,6 +8,7 @@ import java.util.zip.ZipOutputStream;
 
 /**
  * 同步压缩输出流
+ * 不同业务场景需要不同的压缩格式，调用方无需关心底层实现，都使用 write() 方法
  * 支持 GZIP 和 ZIP 两种压缩模式，边写边压缩，无需临时文件
  */
 public class SyncZipOutputStream extends OutputStream {
